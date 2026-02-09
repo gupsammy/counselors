@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "defaults": {
+    "timeout": 540,
+    "outputDir": "./agents/counselors",
+    "readOnly": "bestEffort",
+    "maxContextKb": 50,
+    "maxParallel": 4
+  },
+  "tools": {
+    "claude": {
+      "binary": "/usr/local/bin/claude",
+      "defaultModel": "opus",
+      "models": ["opus", "sonnet", "haiku"],
+      "readOnly": { "level": "enforced" },
+      "promptMode": "argument",
+      "modelFlag": "--model"
+    },
+    "codex": {
+      "binary": "/usr/local/bin/codex",
+      "defaultModel": "gpt-5.3-codex",
+      "models": ["gpt-5.3-codex", "gpt-5.2-codex"],
+      "readOnly": { "level": "enforced" },
+      "promptMode": "argument",
+      "modelFlag": "-m"
+    }
+  }
+}

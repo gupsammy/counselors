@@ -1,0 +1,1108 @@
+OpenAI Codex v0.98.0 (research preview)
+--------
+workdir: /Users/aaron/Code/counselors
+model: gpt-5.3-codex
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: xhigh
+reasoning summaries: auto
+session id: 019c4291-c609-7483-8b37-6a596feeb9d0
+--------
+user
+Read the file at ./agents/second-opinions/codebase-review/prompt.md and follow the instructions within it.
+deprecated: `[features].web_search_request` is deprecated. Use `web_search` instead.
+  Set `web_search` to `"live"`, `"cached"`, or `"disabled"` at the top level (or under a profile) in config.toml.
+mcp startup: no servers
+
+thinking
+**Acknowledging request and reading file**
+codex
+I’ll open `./agents/second-opinions/codebase-review/prompt.md` first, then execute exactly what that prompt instructs.
+exec
+/bin/zsh -lc 'cat ./agents/second-opinions/codebase-review/prompt.md' in /Users/aaron/Code/counselors succeeded in 52ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+# Second Opinion Request
+
+## Question
+Review the entire codebase of the `counselors` npm CLI tool. This is a freshly-built v0.1.0 that fans out prompts to multiple AI coding agents (Claude, Codex, Gemini, Amp) in parallel. Evaluate architecture, code quality, security, error handling, testability, and any issues or gaps.
+
+## Context
+
+### Project Structure (28 source files)
+
+```
+src/
+  cli.ts                    — Commander entry point, command wiring
+  types.ts                  — Shared types + zod schemas
+  constants.ts              — Config paths (XDG), timeouts, search paths
+  core/
+    config.ts               — Load/save/validate/merge JSON config
+    discovery.ts            — Two-stage binary finder (which + extended PATH)
+    executor.ts             — child_process.spawn wrapper, timeout, ANSI strip
+    dispatcher.ts           — p-limit parallel fan-out, symlink check, file writes
+
+thinking
+**Planning thorough codebase review**
+codex
+I’ve loaded the review prompt and will now inspect the actual repository files so the second opinion is grounded in code, not just the provided summary.
+exec
+/bin/zsh -lc 'rg --files' in /Users/aaron/Code/counselors succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+src/commands/run.ts
+src/commands/init.ts
+src/commands/tools/list.ts
+src/commands/tools/add.ts
+src/commands/tools/discover.ts
+src/commands/tools/remove.ts
+src/commands/tools/test.ts
+src/commands/doctor.ts
+src/constants.ts
+src/adapters/custom.ts
+src/adapters/index.ts
+src/adapters/codex.ts
+src/adapters/claude.ts
+src/adapters/amp.ts
+src/adapters/gemini.ts
+src/adapters/base.ts
+src/types.ts
+src/cli.ts
+src/core/dispatcher.ts
+
+thinking
+**Planning parallel file reads**
+codex
+Next I’m reading the core command flow and adapters with line numbers so I can cite concrete findings precisely.
+exec
+/bin/zsh -lc "nl -ba src/core/config.ts | sed -n '1,260p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/commands/run.ts | sed -n '1,260p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/core/dispatcher.ts | sed -n '1,260p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/core/executor.ts | sed -n '1,260p'" in /Users/aaron/Code/counselors succeeded in 52ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { readFileSync, writeFileSync, mkdirSync, existsSync, chmodSync } from 'node:fs';
+     2	import { dirname, resolve } from 'node:path';
+     3	import { ConfigSchema, type Config, type ToolConfig } from '../types.js';
+     4	import { CONFIG_DIR, CONFIG_FILE, CONFIG_FILE_MODE } from '../constants.js';
+     5	
+     6	const DEFAULT_CONFIG: Config = {
+     7	  version: 1,
+     8	  defaults: {
+     9	    timeout: 540,
+    10	    outputDir: './agents/counselors',
+    11	    readOnly: 'bestEffort',
+    12	    maxContextKb: 50,
+    13	    maxParallel: 4,
+    14	  },
+    15	  tools: {},
+    16	};
+    17	
+    18	export function loadConfig(globalPath?: string): Config {
+    19	  const path = globalPath ?? CONFIG_FILE;
+ succeeded in 52ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import pLimit from 'p-limit';
+     2	import { writeFileSync, lstatSync } from 'node:fs';
+     3	import { join } from 'node:path';
+     4	import { execute, captureAmpUsage, computeAmpCostFromSnapshots } from './executor.js';
+     5	import { getAdapter, isBuiltInTool } from '../adapters/index.js';
+     6	import type { Config, RunRequest, ToolReport, ReadOnlyLevel } from '../types.js';
+     7	import { debug, warn } from '../ui/logger.js';
+     8	
+     9	interface DispatchOptions {
+    10	  config: Config;
+    11	  toolIds: string[];
+    12	  promptFilePath: string;
+    13	  promptContent: string;
+    14	  outputDir: string;
+    15	  readOnlyPolicy: ReadOnlyLevel;
+    16	  cwd: string;
+    17	}
+    18	
+    19	/**
+ succeeded in 52ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import type { Command } from 'commander';
+     2	import { readFileSync, writeFileSync, copyFileSync } from 'node:fs';
+     3	import { resolve, basename } from 'node:path';
+     4	import { loadConfig, loadProjectConfig, mergeConfigs } from '../core/config.js';
+     5	import { generateSlug, generateSlugFromFile, resolveOutputDir, buildPrompt } from '../core/prompt-builder.js';
+     6	import { gatherContext } from '../core/context.js';
+     7	import { dispatch } from '../core/dispatcher.js';
+     8	import { synthesize } from '../core/synthesis.js';
+     9	import { getAdapter, isBuiltInTool } from '../adapters/index.js';
+    10	import { createSpinner, formatRunSummary, formatDryRun } from '../ui/output.js';
+    11	import { info, error, warn } from '../ui/logger.js';
+    12	import type { ReadOnlyLevel, RunManifest } from '../types.js';
+    13	
+    14	export function registerRunCommand(program: Command): void {
+    15	  program
+    16	    .command('run [prompt]')
+    17	    .description('Dispatch prompt to configured AI tools in parallel')
+    18	    .option('-f, --file <path>', 'Use a pre-built prompt file (no wrapping)')
+    19	    .option('-t, --tools <tools>', 'Comma-separated list of tools to use')
+ succeeded in 52ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { spawn, execSync } from 'node:child_process';
+     2	import stripAnsi from 'strip-ansi';
+     3	import type { Invocation, ExecResult, ToolAdapter, ToolConfig, TestResult } from '../types.js';
+     4	import { KILL_GRACE_PERIOD, TEST_TIMEOUT } from '../constants.js';
+     5	import { parseAmpUsage, computeAmpCost } from '../adapters/amp.js';
+     6	import type { CostInfo } from '../types.js';
+     7	import { debug } from '../ui/logger.js';
+     8	
+     9	/**
+    10	 * Execute a tool invocation with timeout and output capture.
+    11	 * Uses child_process.spawn — no shell: true (security).
+    12	 */
+    13	export function execute(invocation: Invocation, timeoutMs: number): Promise<ExecResult> {
+    14	  return new Promise((resolve) => {
+    15	    const start = Date.now();
+    16	    let stdout = '';
+    17	    let stderr = '';
+    18	    let timedOut = false;
+    19	    let killed = false;
+
+thinking
+**Planning parallel file inspection**
+codex
+I’ve started identifying concrete risks already; I’m now reading the remaining core modules and all adapters to validate behavior end-to-end.
+exec
+/bin/zsh -lc "nl -ba src/core/discovery.ts | sed -n '1,320p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/core/context.ts | sed -n '1,320p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/core/prompt-builder.ts | sed -n '1,320p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/core/synthesis.ts | sed -n '1,320p'" in /Users/aaron/Code/counselors succeeded in 52ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { execSync } from 'node:child_process';
+     2	import { readFileSync, statSync } from 'node:fs';
+     3	import { resolve } from 'node:path';
+     4	import { DEFAULT_MAX_CONTEXT_KB } from '../constants.js';
+     5	import { debug } from '../ui/logger.js';
+     6	
+     7	/**
+     8	 * Gather context from git diff and specified files.
+     9	 */
+    10	export function gatherContext(cwd: string, paths: string[], maxKb: number = DEFAULT_MAX_CONTEXT_KB): string {
+    11	  const parts: string[] = [];
+    12	  let totalBytes = 0;
+    13	  const maxBytes = maxKb * 1024;
+    14	
+    15	  // Git diff (staged + unstaged)
+    16	  const diff = getGitDiff(cwd);
+    17	  if (diff) {
+    18	    parts.push('### Recent Changes (Git Diff)', '', '```diff', diff, '```', '');
+    19	    totalBytes += Buffer.byteLength(diff);
+ succeeded in 52ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { MAX_SLUG_LENGTH } from '../constants.js';
+     2	import { existsSync, mkdirSync } from 'node:fs';
+     3	import { join, basename, dirname } from 'node:path';
+     4	
+     5	/**
+     6	 * Generate a slug from prompt text.
+     7	 * Lowercase, hyphens, max 40 chars.
+     8	 */
+     9	export function generateSlug(text: string): string {
+    10	  return text
+    11	    .toLowerCase()
+    12	    .replace(/[^a-z0-9\s-]/g, '')
+    13	    .replace(/\s+/g, '-')
+    14	    .replace(/-+/g, '-')
+    15	    .replace(/^-|-$/g, '')
+    16	    .slice(0, MAX_SLUG_LENGTH);
+    17	}
+    18	
+    19	/**
+ succeeded in 52ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { readFileSync, existsSync } from 'node:fs';
+     2	import { join } from 'node:path';
+     3	import type { RunManifest, ToolReport } from '../types.js';
+     4	
+     5	/**
+     6	 * Generate a heuristic summary of run results (v1 — no LLM).
+     7	 */
+     8	export function synthesize(manifest: RunManifest, outputDir: string): string {
+     9	  const parts: string[] = [
+    10	    '# Run Summary',
+    11	    '',
+    12	    `**Prompt:** ${manifest.prompt.slice(0, 100)}${manifest.prompt.length > 100 ? '...' : ''}`,
+    13	    `**Tools:** ${manifest.tools.map(t => t.toolId).join(', ')}`,
+    14	    `**Policy:** read-only=${manifest.readOnlyPolicy}`,
+    15	    '',
+    16	  ];
+    17	
+    18	  // Per-tool summaries
+    19	  parts.push('## Results', '');
+ succeeded in 52ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { execSync } from 'node:child_process';
+     2	import { accessSync, constants, readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
+     3	import { join, resolve } from 'node:path';
+     4	import { homedir } from 'node:os';
+     5	import { getExtendedSearchPaths, DISCOVERY_TIMEOUT, VERSION_TIMEOUT } from '../constants.js';
+     6	import type { DiscoveryResult } from '../types.js';
+     7	
+     8	/**
+     9	 * Two-stage binary discovery:
+    10	 * 1. `which <command>` via execSync
+    11	 * 2. Manual scan of extended paths
+    12	 */
+    13	export function findBinary(command: string): string | null {
+    14	  // Stage 1: which
+    15	  try {
+    16	    const result = execSync(`which ${command}`, {
+    17	      timeout: DISCOVERY_TIMEOUT,
+    18	      stdio: ['pipe', 'pipe', 'pipe'],
+    19	      encoding: 'utf-8',
+
+thinking
+**Planning adapter and command implementation**
+exec
+/bin/zsh -lc "nl -ba src/adapters/claude.ts | sed -n '1,260p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/adapters/index.ts | sed -n '1,320p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/adapters/base.ts | sed -n '1,260p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/adapters/codex.ts | sed -n '1,320p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/adapters/gemini.ts | sed -n '1,320p'" in /Users/aaron/Code/counselors succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import type { ToolAdapter, RunRequest, Invocation, ExecResult, ToolReport } from '../types.js';
+     2	import type { ReadOnlyLevel } from '../types.js';
+     3	
+     4	export abstract class BaseAdapter implements ToolAdapter {
+     5	  abstract id: string;
+     6	  abstract displayName: string;
+     7	  abstract commands: string[];
+     8	  abstract installUrl: string;
+     9	  abstract readOnly: { level: ReadOnlyLevel };
+    10	  abstract models: { id: string; name: string; recommended?: boolean }[];
+    11	
+    12	  abstract buildInvocation(req: RunRequest): Invocation;
+    13	
+    14	  parseResult(result: ExecResult): Partial<ToolReport> {
+    15	    return {
+    16	      status: result.timedOut ? 'timeout' : result.exitCode === 0 ? 'success' : 'error',
+    17	      exitCode: result.exitCode,
+    18	      durationMs: result.durationMs,
+    19	      wordCount: result.stdout.split(/\s+/).filter(Boolean).length,
+ succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import type { ToolAdapter, ToolConfig } from '../types.js';
+     2	import { ClaudeAdapter } from './claude.js';
+     3	import { CodexAdapter } from './codex.js';
+     4	import { GeminiAdapter } from './gemini.js';
+     5	import { AmpAdapter } from './amp.js';
+     6	import { CustomAdapter } from './custom.js';
+     7	
+     8	const builtInAdapters: Record<string, () => ToolAdapter> = {
+     9	  claude: () => new ClaudeAdapter(),
+    10	  codex: () => new CodexAdapter(),
+    11	  gemini: () => new GeminiAdapter(),
+    12	  amp: () => new AmpAdapter(),
+    13	};
+    14	
+    15	export function getAdapter(id: string, config?: ToolConfig): ToolAdapter {
+    16	  if (builtInAdapters[id]) {
+    17	    return builtInAdapters[id]();
+    18	  }
+    19	  if (config) {
+ succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { BaseAdapter } from './base.js';
+     2	import type { RunRequest, Invocation } from '../types.js';
+     3	
+     4	export class ClaudeAdapter extends BaseAdapter {
+     5	  id = 'claude';
+     6	  displayName = 'Claude Code';
+     7	  commands = ['claude'];
+     8	  installUrl = 'https://docs.anthropic.com/en/docs/claude-code';
+     9	  readOnly = { level: 'enforced' as const };
+    10	  models = [
+    11	    { id: 'opus', name: 'Opus 4.6 — most capable', recommended: true },
+    12	    { id: 'sonnet', name: 'Sonnet 4.5 — fast and capable' },
+    13	    { id: 'haiku', name: 'Haiku 4.5 — fastest, most affordable' },
+    14	  ];
+    15	
+    16	  buildInvocation(req: RunRequest): Invocation {
+    17	    const instruction = `Read the file at ${req.promptFilePath} and follow the instructions within it.`;
+    18	    const args = [
+    19	      '-p',
+ succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { BaseAdapter } from './base.js';
+     2	import type { RunRequest, Invocation } from '../types.js';
+     3	
+     4	export class CodexAdapter extends BaseAdapter {
+     5	  id = 'codex';
+     6	  displayName = 'OpenAI Codex';
+     7	  commands = ['codex'];
+     8	  installUrl = 'https://github.com/openai/codex';
+     9	  readOnly = { level: 'enforced' as const };
+    10	  models = [
+    11	    { id: 'gpt-5.3-codex', name: 'GPT-5.3 Codex — latest frontier', recommended: true },
+    12	    { id: 'gpt-5.2-codex', name: 'GPT-5.2 Codex — frontier agentic coding' },
+    13	    { id: 'gpt-5.1-codex-max', name: 'GPT-5.1 Codex Max — deep reasoning' },
+    14	    { id: 'gpt-5.1-codex-mini', name: 'GPT-5.1 Codex Mini — cheaper, faster' },
+    15	  ];
+    16	
+    17	  buildInvocation(req: RunRequest): Invocation {
+    18	    const instruction = `Read the file at ${req.promptFilePath} and follow the instructions within it.`;
+    19	    const args = ['exec', '-m', req.model];
+ succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { BaseAdapter } from './base.js';
+     2	import type { RunRequest, Invocation } from '../types.js';
+     3	
+     4	export class GeminiAdapter extends BaseAdapter {
+     5	  id = 'gemini';
+     6	  displayName = 'Gemini CLI';
+     7	  commands = ['gemini'];
+     8	  installUrl = 'https://github.com/google-gemini/gemini-cli';
+     9	  readOnly = { level: 'bestEffort' as const };
+    10	  models = [
+    11	    { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro Preview — latest', recommended: true },
+    12	    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro — stable GA' },
+    13	    { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash Preview — fast' },
+    14	    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash — fast GA' },
+    15	  ];
+    16	
+    17	  buildInvocation(req: RunRequest): Invocation {
+    18	    const instruction = `Read the file at ${req.promptFilePath} and follow the instructions within it.`;
+    19	    const args = ['-m', req.model];
+
+thinking
+**Identifying need for AMP and custom commands**
+exec
+/bin/zsh -lc "nl -ba src/adapters/amp.ts | sed -n '1,340p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/adapters/custom.ts | sed -n '1,360p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/types.ts | sed -n '1,360p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/cli.ts | sed -n '1,280p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/constants.ts | sed -n '1,280p'" in /Users/aaron/Code/counselors succeeded in 52ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { BaseAdapter } from './base.js';
+     2	import type { RunRequest, Invocation, ToolConfig } from '../types.js';
+     3	import type { ReadOnlyLevel } from '../types.js';
+     4	
+     5	export class CustomAdapter extends BaseAdapter {
+     6	  id: string;
+     7	  displayName: string;
+     8	  commands: string[];
+     9	  installUrl = '';
+    10	  readOnly: { level: ReadOnlyLevel };
+    11	  models: { id: string; name: string; recommended?: boolean }[] = [];
+    12	
+    13	  private config: ToolConfig;
+    14	
+    15	  constructor(id: string, config: ToolConfig) {
+    16	    super();
+    17	    this.id = id;
+    18	    this.displayName = id;
+    19	    this.commands = [config.binary];
+ succeeded in 52ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { BaseAdapter } from './base.js';
+     2	import type { RunRequest, Invocation, ExecResult, ToolReport, CostInfo } from '../types.js';
+     3	import { AMP_SETTINGS_FILE } from '../constants.js';
+     4	import { existsSync } from 'node:fs';
+     5	
+     6	export class AmpAdapter extends BaseAdapter {
+     7	  id = 'amp';
+     8	  displayName = 'Amp CLI';
+     9	  commands = ['amp'];
+    10	  installUrl = 'https://ampcode.com';
+    11	  readOnly = { level: 'bestEffort' as const };
+    12	  models = [
+    13	    { id: 'smart', name: 'Smart — Opus 4.6, most capable', recommended: true },
+    14	    { id: 'deep', name: 'Deep — GPT-5.2 Codex, extended thinking' },
+    15	  ];
+    16	
+    17	  buildInvocation(req: RunRequest): Invocation {
+    18	    const args = ['-m', req.model, '-x'];
+    19	
+ succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { z } from 'zod';
+     2	
+     3	// ── Read-only levels ──
+     4	
+     5	export type ReadOnlyLevel = 'enforced' | 'bestEffort' | 'none';
+     6	
+     7	// ── Prompt delivery mode ──
+     8	
+     9	export type PromptMode = 'argument' | 'stdin';
+    10	
+    11	// ── Config schemas (zod) ──
+    12	
+    13	export const ToolConfigSchema = z.object({
+    14	  binary: z.string(),
+    15	  defaultModel: z.string(),
+    16	  models: z.array(z.string()).optional(),
+    17	  readOnly: z.object({
+    18	    level: z.enum(['enforced', 'bestEffort', 'none']),
+    19	    flags: z.array(z.string()).optional(),
+ succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { homedir } from 'node:os';
+     2	import { join } from 'node:path';
+     3	
+     4	// ── XDG config ──
+     5	
+     6	const xdgConfig = process.env['XDG_CONFIG_HOME'] || join(homedir(), '.config');
+     7	export const CONFIG_DIR = join(xdgConfig, 'counselors');
+     8	export const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
+     9	export const AMP_SETTINGS_FILE = join(CONFIG_DIR, 'amp-readonly-settings.json');
+    10	
+    11	// ── Default output ──
+    12	
+    13	export const DEFAULT_OUTPUT_DIR = './agents/counselors';
+    14	
+    15	// ── Timeouts (seconds) ──
+    16	
+    17	export const DEFAULT_TIMEOUT = 540;
+    18	export const KILL_GRACE_PERIOD = 15_000; // ms
+    19	export const TEST_TIMEOUT = 30_000; // ms
+ succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { Command } from 'commander';
+     2	import { registerRunCommand } from './commands/run.js';
+     3	import { registerDoctorCommand } from './commands/doctor.js';
+     4	import { registerInitCommand } from './commands/init.js';
+     5	import { registerDiscoverCommand } from './commands/tools/discover.js';
+     6	import { registerAddCommand } from './commands/tools/add.js';
+     7	import { registerRemoveCommand } from './commands/tools/remove.js';
+     8	import { registerListCommand } from './commands/tools/list.js';
+     9	import { registerTestCommand } from './commands/tools/test.js';
+    10	
+    11	const program = new Command();
+    12	
+    13	program
+    14	  .name('counselors')
+    15	  .description('Fan out prompts to multiple AI coding agents in parallel')
+    16	  .version('0.1.0');
+    17	
+    18	// Top-level commands
+    19	registerRunCommand(program);
+
+thinking
+**Inspecting remaining source files**
+codex
+I’m moving through the command handlers and UI formatting now; this is where most operational and UX edge-case risks tend to hide.
+exec
+/bin/zsh -lc "nl -ba src/commands/tools/add.ts | sed -n '1,380p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/commands/doctor.ts | sed -n '1,320p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/commands/init.ts | sed -n '1,420p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/commands/tools/remove.ts | sed -n '1,220p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/commands/tools/discover.ts | sed -n '1,320p'" in /Users/aaron/Code/counselors succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import type { Command } from 'commander';
+     2	import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
+     3	import { resolve, dirname } from 'node:path';
+     4	import { fileURLToPath } from 'node:url';
+     5	import { loadConfig, saveConfig, addToolToConfig } from '../core/config.js';
+     6	import { discoverTool } from '../core/discovery.js';
+     7	import { getAllBuiltInAdapters } from '../adapters/index.js';
+     8	import { selectTools, selectModel, confirmAction } from '../ui/prompts.js';
+     9	import { createSpinner, formatDiscoveryResults } from '../ui/output.js';
+    10	import { info, success, warn } from '../ui/logger.js';
+    11	import { CONFIG_DIR, AMP_SETTINGS_FILE } from '../constants.js';
+    12	
+    13	export function registerInitCommand(program: Command): void {
+    14	  program
+    15	    .command('init')
+    16	    .description('Interactive setup wizard')
+    17	    .action(async () => {
+    18	      info('\nCounselors — setup wizard\n');
+    19	
+ succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import type { Command } from 'commander';
+     2	import { loadConfig, saveConfig, addToolToConfig } from '../../core/config.js';
+     3	import { discoverTool } from '../../core/discovery.js';
+     4	import { getAdapter, isBuiltInTool, getBuiltInToolIds } from '../../adapters/index.js';
+     5	import { selectModel, confirmOverwrite, promptInput, promptSelect } from '../../ui/prompts.js';
+     6	import { success, error, info } from '../../ui/logger.js';
+     7	import type { ToolConfig, ReadOnlyLevel } from '../../types.js';
+     8	
+     9	export function registerAddCommand(program: Command): void {
+    10	  program
+    11	    .command('add <tool>')
+    12	    .description('Add a tool (claude, codex, gemini, amp, or custom)')
+    13	    .action(async (toolId: string) => {
+    14	      const config = loadConfig();
+    15	
+    16	      // Check if already exists
+    17	      if (config.tools[toolId]) {
+    18	        const overwrite = await confirmOverwrite(toolId);
+    19	        if (!overwrite) {
+ succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import type { Command } from 'commander';
+     2	import { existsSync } from 'node:fs';
+     3	import { loadConfig } from '../core/config.js';
+     4	import { findBinary, getBinaryVersion } from '../core/discovery.js';
+     5	import { getAdapter, isBuiltInTool } from '../adapters/index.js';
+     6	import { CONFIG_FILE, AMP_SETTINGS_FILE } from '../constants.js';
+     7	import { formatDoctorResults } from '../ui/output.js';
+     8	import { info } from '../ui/logger.js';
+     9	import type { DoctorCheck } from '../types.js';
+    10	
+    11	export function registerDoctorCommand(program: Command): void {
+    12	  program
+    13	    .command('doctor')
+    14	    .description('Check tool configuration and health')
+    15	    .action(async () => {
+    16	      const checks: DoctorCheck[] = [];
+    17	
+    18	      // Check config file
+    19	      if (existsSync(CONFIG_FILE)) {
+ succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import type { Command } from 'commander';
+     2	import { getAllBuiltInAdapters } from '../../adapters/index.js';
+     3	import { discoverTool } from '../../core/discovery.js';
+     4	import { formatDiscoveryResults, createSpinner } from '../../ui/output.js';
+     5	import { info } from '../../ui/logger.js';
+     6	
+     7	export function registerDiscoverCommand(program: Command): void {
+     8	  program
+     9	    .command('discover')
+    10	    .description('Discover installed AI CLI tools')
+    11	    .action(async () => {
+    12	      const spinner = createSpinner('Scanning for AI CLI tools...').start();
+    13	      const adapters = getAllBuiltInAdapters();
+    14	      const results = [];
+    15	
+    16	      for (const adapter of adapters) {
+    17	        const result = discoverTool(adapter.commands);
+    18	        results.push({
+    19	          ...result,
+ succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import type { Command } from 'commander';
+     2	import { loadConfig, saveConfig, removeToolFromConfig } from '../../core/config.js';
+     3	import { confirmAction } from '../../ui/prompts.js';
+     4	import { success, error } from '../../ui/logger.js';
+     5	
+     6	export function registerRemoveCommand(program: Command): void {
+     7	  program
+     8	    .command('remove <tool>')
+     9	    .description('Remove a configured tool')
+    10	    .action(async (toolId: string) => {
+    11	      const config = loadConfig();
+    12	
+    13	      if (!config.tools[toolId]) {
+    14	        error(`Tool "${toolId}" is not configured.`);
+    15	        return;
+    16	      }
+    17	
+    18	      const confirmed = await confirmAction(`Remove "${toolId}" from config?`);
+    19	      if (!confirmed) return;
+
+thinking
+**Planning test tools and logging**
+codex
+I have enough for a first risk list and I’m now checking test command and output formatting paths to confirm which issues are covered versus untested.
+exec
+/bin/zsh -lc "nl -ba src/commands/tools/test.ts | sed -n '1,340p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/commands/tools/list.ts | sed -n '1,260p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/ui/output.ts | sed -n '1,420p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/ui/logger.ts | sed -n '1,260p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba src/ui/prompts.ts | sed -n '1,340p'" in /Users/aaron/Code/counselors succeeded in 52ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import type { Command } from 'commander';
+     2	import { loadConfig } from '../../core/config.js';
+     3	import { formatToolList } from '../../ui/output.js';
+     4	import { info } from '../../ui/logger.js';
+     5	
+     6	export function registerListCommand(program: Command): void {
+     7	  program
+     8	    .command('list')
+     9	    .alias('ls')
+    10	    .description('List configured tools')
+    11	    .action(async () => {
+    12	      const config = loadConfig();
+    13	
+    14	      const tools = Object.entries(config.tools).map(([id, t]) => ({
+    15	        id,
+    16	        binary: t.binary,
+    17	        model: t.defaultModel,
+    18	        readOnly: t.readOnly.level,
+    19	      }));
+ succeeded in 50ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import ora, { type Ora } from 'ora';
+     2	import type { ToolReport, DoctorCheck, DiscoveryResult, TestResult, RunManifest } from '../types.js';
+     3	
+     4	export function createSpinner(text: string): Ora {
+     5	  return ora({ text, stream: process.stderr });
+     6	}
+     7	
+     8	export function formatDiscoveryResults(results: (DiscoveryResult & { displayName?: string })[]): string {
+     9	  const lines: string[] = ['', 'Discovered tools:', ''];
+    10	  for (const r of results) {
+    11	    const name = r.displayName || r.toolId;
+    12	    if (r.found) {
+    13	      lines.push(`  ✓ ${name}`);
+    14	      lines.push(`    Path: ${r.path}`);
+    15	      if (r.version) lines.push(`    Version: ${r.version}`);
+    16	    } else {
+    17	      lines.push(`  ✗ ${name} — not found`);
+    18	    }
+    19	  }
+ succeeded in 52ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import type { Command } from 'commander';
+     2	import { loadConfig } from '../../core/config.js';
+     3	import { getAdapter, isBuiltInTool } from '../../adapters/index.js';
+     4	import { executeTest } from '../../core/executor.js';
+     5	import { formatTestResults, createSpinner } from '../../ui/output.js';
+     6	import { info, error } from '../../ui/logger.js';
+     7	import type { TestResult } from '../../types.js';
+     8	
+     9	export function registerTestCommand(program: Command): void {
+    10	  program
+    11	    .command('test [tools...]')
+    12	    .description('Test configured tools with a "reply OK" prompt')
+    13	    .action(async (toolIds: string[]) => {
+    14	      const config = loadConfig();
+    15	
+    16	      const idsToTest = toolIds.length > 0
+    17	        ? toolIds
+    18	        : Object.keys(config.tools);
+    19	
+ succeeded in 50ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { select, checkbox, confirm, input } from '@inquirer/prompts';
+     2	
+     3	export async function selectModel(toolId: string, models: { id: string; name: string; recommended?: boolean }[]): Promise<string> {
+     4	  const choices = models.map(m => ({
+     5	    name: m.recommended ? `${m.name} (Recommended)` : m.name,
+     6	    value: m.id,
+     7	  }));
+     8	
+     9	  return select({
+    10	    message: `Select model for ${toolId}:`,
+    11	    choices,
+    12	  });
+    13	}
+    14	
+    15	export async function selectTools(tools: { id: string; name: string; found: boolean }[]): Promise<string[]> {
+    16	  const choices = tools.map(t => ({
+    17	    name: t.found ? `${t.name} — found` : `${t.name} — not found`,
+    18	    value: t.id,
+    19	    checked: t.found,
+ succeeded in 50ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	const isDebug = process.env['DEBUG'] === '1' || process.env['DEBUG'] === 'counselors';
+     2	
+     3	export function debug(msg: string): void {
+     4	  if (isDebug) {
+     5	    process.stderr.write(`[debug] ${msg}\n`);
+     6	  }
+     7	}
+     8	
+     9	export function warn(msg: string): void {
+    10	  process.stderr.write(`⚠ ${msg}\n`);
+    11	}
+    12	
+    13	export function error(msg: string): void {
+    14	  process.stderr.write(`✗ ${msg}\n`);
+    15	}
+    16	
+    17	export function info(msg: string): void {
+    18	  process.stdout.write(`${msg}\n`);
+    19	}
+
+thinking
+**Planning test inspection for coverage**
+exec
+/bin/zsh -lc "nl -ba tests/unit/discovery.test.ts | sed -n '1,360p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba tests/unit/config.test.ts | sed -n '1,360p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba tests/unit/prompt-builder.test.ts | sed -n '1,340p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba tests/unit/executor.test.ts | sed -n '1,420p'" in /Users/aaron/Code/counselors succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { describe, it, expect } from 'vitest';
+     2	import { findBinary } from '../../src/core/discovery.js';
+     3	
+     4	describe('findBinary', () => {
+     5	  it('finds node binary', () => {
+     6	    const path = findBinary('node');
+     7	    expect(path).toBeTruthy();
+     8	    expect(path).toContain('node');
+     9	  });
+    10	
+    11	  it('returns null for nonexistent binary', () => {
+    12	    const path = findBinary('totally-nonexistent-binary-xyz-123');
+    13	    expect(path).toBeNull();
+    14	  });
+    15	
+    16	  it('finds npm binary', () => {
+    17	    const path = findBinary('npm');
+    18	    expect(path).toBeTruthy();
+    19	  });
+ succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+     2	import { mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
+     3	import { join } from 'node:path';
+     4	import { tmpdir } from 'node:os';
+     5	import { loadConfig, saveConfig, mergeConfigs, addToolToConfig, removeToolFromConfig, getConfiguredTools } from '../../src/core/config.js';
+     6	import type { Config, ToolConfig } from '../../src/types.js';
+     7	
+     8	const testDir = join(tmpdir(), `counselors-test-${Date.now()}`);
+     9	const testConfigFile = join(testDir, 'config.json');
+    10	
+    11	beforeEach(() => {
+    12	  mkdirSync(testDir, { recursive: true });
+    13	});
+    14	
+    15	afterEach(() => {
+    16	  rmSync(testDir, { recursive: true, force: true });
+    17	});
+    18	
+    19	describe('loadConfig', () => {
+ succeeded in 52ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { describe, it, expect } from 'vitest';
+     2	import { generateSlug, generateSlugFromFile, buildPrompt } from '../../src/core/prompt-builder.js';
+     3	
+     4	describe('generateSlug', () => {
+     5	  it('converts text to slug', () => {
+     6	    expect(generateSlug('should we use Redis for caching')).toBe('should-we-use-redis-for-caching');
+     7	  });
+     8	
+     9	  it('strips special characters', () => {
+    10	    expect(generateSlug('What are the tradeoffs?')).toBe('what-are-the-tradeoffs');
+    11	  });
+    12	
+    13	  it('truncates to max length', () => {
+    14	    const long = 'this is a very long prompt that should be truncated to forty characters';
+    15	    const slug = generateSlug(long);
+    16	    expect(slug.length).toBeLessThanOrEqual(40);
+    17	  });
+    18	
+    19	  it('handles empty string', () => {
+ succeeded in 52ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { describe, it, expect } from 'vitest';
+     2	import { execute } from '../../src/core/executor.js';
+     3	import { resolve } from 'node:path';
+     4	
+     5	describe('execute', () => {
+     6	  it('captures stdout', async () => {
+     7	    const result = await execute({
+     8	      cmd: 'echo',
+     9	      args: ['hello world'],
+    10	      cwd: process.cwd(),
+    11	    }, 5000);
+    12	
+    13	    expect(result.exitCode).toBe(0);
+    14	    expect(result.stdout.trim()).toBe('hello world');
+    15	    expect(result.timedOut).toBe(false);
+    16	  });
+    17	
+    18	  it('captures stderr', async () => {
+    19	    const result = await execute({
+
+thinking
+**Planning adapter tests**
+exec
+/bin/zsh -lc "nl -ba tests/unit/adapters/codex.test.ts | sed -n '1,340p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba tests/unit/adapters/claude.test.ts | sed -n '1,320p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba tests/unit/adapters/gemini.test.ts | sed -n '1,320p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba tests/integration/cli.test.ts | sed -n '1,420p'" in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc "nl -ba tests/unit/adapters/amp.test.ts | sed -n '1,360p'" in /Users/aaron/Code/counselors succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { describe, it, expect } from 'vitest';
+     2	import { ClaudeAdapter } from '../../../src/adapters/claude.js';
+     3	import type { RunRequest } from '../../../src/types.js';
+     4	
+     5	describe('ClaudeAdapter', () => {
+     6	  const adapter = new ClaudeAdapter();
+     7	
+     8	  const baseRequest: RunRequest = {
+     9	    prompt: 'test prompt',
+    10	    promptFilePath: '/tmp/prompt.md',
+    11	    toolId: 'claude',
+    12	    model: 'opus',
+    13	    outputDir: '/tmp/out',
+    14	    readOnlyPolicy: 'enforced',
+    15	    timeout: 540,
+    16	    cwd: '/tmp',
+    17	  };
+    18	
+    19	  it('has correct metadata', () => {
+ succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { describe, it, expect } from 'vitest';
+     2	import { CodexAdapter } from '../../../src/adapters/codex.js';
+     3	import type { RunRequest } from '../../../src/types.js';
+     4	
+     5	describe('CodexAdapter', () => {
+     6	  const adapter = new CodexAdapter();
+     7	
+     8	  const baseRequest: RunRequest = {
+     9	    prompt: 'test prompt',
+    10	    promptFilePath: '/tmp/prompt.md',
+    11	    toolId: 'codex',
+    12	    model: 'gpt-5.3-codex',
+    13	    outputDir: '/tmp/out',
+    14	    readOnlyPolicy: 'enforced',
+    15	    timeout: 540,
+    16	    cwd: '/tmp',
+    17	  };
+    18	
+    19	  it('has correct metadata', () => {
+ succeeded in 50ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { describe, it, expect } from 'vitest';
+     2	import { GeminiAdapter } from '../../../src/adapters/gemini.js';
+     3	import type { RunRequest } from '../../../src/types.js';
+     4	
+     5	describe('GeminiAdapter', () => {
+     6	  const adapter = new GeminiAdapter();
+     7	
+     8	  const baseRequest: RunRequest = {
+     9	    prompt: 'test prompt',
+    10	    promptFilePath: '/tmp/prompt.md',
+    11	    toolId: 'gemini',
+    12	    model: 'gemini-3-pro-preview',
+    13	    outputDir: '/tmp/out',
+    14	    readOnlyPolicy: 'bestEffort',
+    15	    timeout: 540,
+    16	    cwd: '/tmp',
+    17	  };
+    18	
+    19	  it('has correct metadata', () => {
+ succeeded in 50ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { describe, it, expect } from 'vitest';
+     2	import { AmpAdapter, parseAmpUsage, computeAmpCost } from '../../../src/adapters/amp.js';
+     3	import type { RunRequest } from '../../../src/types.js';
+     4	
+     5	describe('AmpAdapter', () => {
+     6	  const adapter = new AmpAdapter();
+     7	
+     8	  const baseRequest: RunRequest = {
+     9	    prompt: 'test prompt',
+    10	    promptFilePath: '/tmp/prompt.md',
+    11	    toolId: 'amp',
+    12	    model: 'smart',
+    13	    outputDir: '/tmp/out',
+    14	    readOnlyPolicy: 'bestEffort',
+    15	    timeout: 540,
+    16	    cwd: '/tmp',
+    17	  };
+    18	
+    19	  it('has correct metadata', () => {
+ succeeded in 51ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+     1	import { describe, it, expect, beforeAll } from 'vitest';
+     2	import { execSync } from 'node:child_process';
+     3	import { resolve } from 'node:path';
+     4	
+     5	const CLI = resolve(import.meta.dirname, '../../dist/cli.js');
+     6	
+     7	function run(args: string, options?: { env?: Record<string, string> }): string {
+     8	  try {
+     9	    return execSync(`node ${CLI} ${args}`, {
+    10	      encoding: 'utf-8',
+    11	      timeout: 15_000,
+    12	      env: { ...process.env, ...options?.env },
+    13	      stdio: ['pipe', 'pipe', 'pipe'],
+    14	    }).trim();
+    15	  } catch (e: any) {
+    16	    return (e.stdout || '').trim() + '\n' + (e.stderr || '').trim();
+    17	  }
+    18	}
+    19	
+
+thinking
+**Reviewing package and config files**
+exec
+/bin/zsh -lc 'cat tsconfig.json' in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc 'cat package.json' in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc 'cat vitest.config.ts' in /Users/aaron/Code/counselorsexec
+/bin/zsh -lc 'cat tsup.config.ts' in /Users/aaron/Code/counselors succeeded in 123ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "tests"]
+}
+ succeeded in 125ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+{
+  "name": "counselors",
+  "version": "0.1.0",
+  "description": "Fan out prompts to multiple AI coding agents in parallel",
+  "type": "module",
+  "bin": {
+    "counselors": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^7.0.0",
+    "commander": "^13.0.0",
+    "ora": "^8.0.0",
+ succeeded in 115ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+import { defineConfig } from 'tsup';
+
+export default defineConfig({
+  entry: ['src/cli.ts'],
+  format: ['esm'],
+  target: 'node20',
+  outDir: 'dist',
+  clean: true,
+  splitting: false,
+  sourcemap: true,
+  banner: {
+    js: '#!/usr/bin/env node',
+  },
+});
+ succeeded in 122ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    globals: true,
+    include: ['tests/**/*.test.ts'],
+    testTimeout: 30_000,
+  },
+});
+
+thinking
+**Planning deep code review and test run**
+codex
+I’ve finished source review and now I’m running the test suite to verify whether the current checks actually catch the risks I found.
+exec
+/bin/zsh -lc 'npm test' in /Users/aaron/Code/counselors exited 1 in 774ms:
+
+> counselors@0.1.0 test
+> vitest run
+
+failed to load config from /Users/aaron/Code/counselors/vitest.config.ts
+
+⎯⎯⎯⎯⎯⎯⎯ Startup Error ⎯⎯⎯⎯⎯⎯⎯⎯
+Error: EPERM: operation not permitted, open '/Users/aaron/Code/counselors/node_modules/.vite-temp/vitest.config.ts.timestamp-1770643432569-41b03be21cd23.mjs'
+    at async open (node:internal/fs/promises:636:25)
+    at async Object.writeFile (node:internal/fs/promises:1239:14)
+    at async loadConfigFromBundledFile (file:///Users/aaron/Code/counselors/node_modules/vite/dist/node/chunks/config.js:35907:3)
+    at async bundleAndLoadConfigFile (file:///Users/aaron/Code/counselors/node_modules/vite/dist/node/chunks/config.js:35797:17)
+    at async loadConfigFromFile (file:///Users/aaron/Code/counselors/node_modules/vite/dist/node/chunks/config.js:35764:42)
+    at async resolveConfig (file:///Users/aaron/Code/counselors/node_modules/vite/dist/node/chunks/config.js:35413:22)
+    at async _createServer (file:///Users/aaron/Code/counselors/node_modules/vite/dist/node/chunks/config.js:25362:67)
+    at async createViteServer (file:///Users/aaron/Code/counselors/node_modules/vitest/dist/chunks/cli-api.BkDphVBG.js:6911:17)
+    at async createVitest (file:///Users/aaron/Code/counselors/node_modules/vitest/dist/chunks/cli-api.BkDphVBG.js:10202:17)
+    at async prepareVitest (file:///Users/aaron/Code/counselors/node_modules/vitest/dist/chunks/cli-api.BkDphVBG.js:10541:14) {
+  errno: -1,
+  code: 'EPERM',
+
+
+thinking
+**Identifying multiple critical security and reliability bugs**
+thinking
+**Organizing prioritized security and reliability findings**
+codex
+I’ve completed the code and test pass and identified several high-impact gaps; next I’ll deliver a prioritized review with concrete file/line references and a remediation order.
+
+thinking
+**Planning structured findings and recommendations**
+codex
+**Findings (Ordered by Severity)**
+
+- `Critical` Built-in tool `binary` paths are discovered/saved but not used at runtime, so `doctor` can pass while `run/test` fail.  
+  Evidence: `src/commands/tools/add.ts:40`, `src/commands/init.ts:63`, `src/commands/run.ts:141`, `src/commands/tools/test.ts:35`, `src/adapters/codex.ts:31`, `src/adapters/gemini.ts:30`, `src/adapters/amp.ts:29`, `src/adapters/claude.ts:34`, `src/commands/doctor.ts:45`.  
+  Impact: false confidence + broken execution when binaries are not on `PATH`.  
+  Fix: pass resolved binary into adapters (or into `Invocation.cmd`) for built-ins.
+
+- `Critical` Project config is merged without validation, and JSON parse errors are uncaught in `run`.  
+  Evidence: `src/core/config.ts:30`, `src/core/config.ts:31`, `src/core/config.ts:34`, `src/commands/run.ts:36`, `src/core/dispatcher.ts:24`.  
+  Impact: malformed `.counselors.json` can crash runs or inject bad runtime values (`maxParallel`, timeouts, tool config).  
+  Fix: schema-validate project config with Zod and re-parse merged config before use; wrap load/parse in command-level error handling.
+
+- `High` Shell injection surface in discovery/version checks due `execSync` with interpolated strings.  
+  Evidence: `src/core/discovery.ts:16`, `src/core/discovery.ts:142`.  
+  Impact: crafted command/binary strings can execute unintended shell syntax.  
+  Fix: use `execFileSync`/`spawnSync` with argv arrays (`which`, `--version`) and no shell interpolation.
+
+- `High` Read-only defaults are effectively downgraded to `bestEffort` unless user explicitly overrides every run.  
+  Evidence: `src/commands/run.ts:21`, `src/commands/run.ts:65`, config default exists at `src/types.ts:34`.  
+  Impact: safety policy drift; typo in `--read-only` silently falls back to less strict mode.  
+  Fix: default from merged config, and enforce commander choices instead of fallback coercion.
+
+- `High` `--dry-run` is not dry; it creates output dirs/files before the dry-run branch.  
+  Evidence: `src/commands/run.ts:127`, `src/commands/run.ts:130`, `src/commands/run.ts:132`, `src/commands/run.ts:138`.  
+  Impact: unexpected side effects, polluted output directories, misleading automation behavior.  
+  Fix: evaluate dry-run first; only create/write files in real execution mode.
+
+- `Medium` Strict read-only mode can “succeed” with zero tools executed.  
+  Evidence: `src/core/dispatcher.ts:28`, `src/core/dispatcher.ts:35`, `src/commands/run.ts:194`.  
+  Impact: user gets completion output with no actual review results.  
+  Fix: fail fast when `eligibleTools.length === 0` and set non-zero exit code.
+
+- `Medium` Exit codes are inconsistent for clear error paths.  
+  Evidence: `src/commands/tools/add.ts:33`, `src/commands/tools/remove.ts:14`, `src/commands/tools/test.ts:21`.  
+  Impact: CI/scripting cannot reliably detect failure states.  
+  Fix: set `process.exitCode = 1` for all non-success termination paths.
+
+- `Medium` Context-size controls are partially bypassed; git diff is added before budget enforcement and config `maxContextKb` is ignored by `run`.  
+  Evidence: `src/core/context.ts:10`, `src/core/context.ts:16`, `src/core/context.ts:19`, `src/commands/run.ts:90`, `src/commands/run.ts:117`.  
+  Impact: oversized prompts, unpredictable token/cost blowups.  
+  Fix: pass `config.defaults.maxContextKb` from `run`, and enforce budget before appending diff/content.
+
+- `Medium` File write hardening is inconsistent. Tool outputs use symlink checks, but prompt/manifest/summary writes do not.  
+  Evidence: `src/core/dispatcher.ts:128`, `src/core/dispatcher.ts:132`, `src/commands/run.ts:134`, `src/commands/run.ts:184`, `src/commands/run.ts:188`.  
+  Impact: weaker protection for key run artifacts vs tool outputs.  
+  Fix: centralize all writes through hardened file-write utility.
+
+- `Medium` Test suite misses the highest-risk regressions.  
+  Evidence: `tests/integration/cli.test.ts:55` only checks “run with no tools”; no integration test for a configured successful run path using stored binary paths, no malformed project-config tests, no dry-run side-effect test.  
+  Impact: current “all passing” signal is optimistic.  
+  Fix: add integration coverage for configured run/test execution, project config validation failures, and dry-run no-write guarantee.
+
+**Architecture Verdict**
+
+- The module split is good (`core`, `adapters`, `commands`, `ui`), but execution semantics are leaking across layers (adapter command selection vs configured binary path).  
+- Biggest blind spot: policy and config correctness are not treated as first-class runtime invariants.
+
+**Assumptions / Open Questions**
+
+1. Is `.counselors.json` intended to be trusted-by-default in arbitrary repos? If not, current behavior is too permissive.  
+2. Is the discovered absolute binary path intended to guarantee execution even when not on `PATH`? Current behavior contradicts that expectation.  
+3. Should `--dry-run` be strictly no-side-effects? If yes, behavior is currently incorrect.
+
+**Validation Note**
+
+- I attempted to run tests, but the environment is read-only and Vitest failed on startup trying to write `node_modules/.vite-temp/...` (`EPERM`). So I validated by static review of source + tests rather than executing the suite here.
+
+**Recommended Remediation Order**
+
+1. Fix built-in binary path usage (`Invocation.cmd` from config for built-ins).  
+2. Validate project config + merged config and harden error handling in `run`.  
+3. Remove shell interpolation from discovery/version commands.  
+4. Make read-only policy explicit/strictly validated.  
+5. Make `--dry-run` side-effect free.  
+6. Backfill integration tests for the above before v0.1.1.
+tokens used
+92,806

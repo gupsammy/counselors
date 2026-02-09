@@ -1,0 +1,15 @@
+Loaded cached credentials.
+Loading extension: chrome-devtools-mcp
+Hook registry initialized with 0 hook entries
+Error when talking to Gemini API Full report available at: /var/folders/j5/yx2zglv52nscdnnng5x24hnc0000gn/T/gemini-client-error-Turn.run-sendMessageStream-2026-02-09T12-06-22-052Z.json TypeError: Cannot read properties of undefined (reading 'candidates')
+    at fromGenerateContentResponse (file:///opt/homebrew/Cellar/gemini-cli/0.27.3/libexec/lib/node_modules/@google/gemini-cli/node_modules/@google/gemini-cli-core/dist/src/code_assist/converter.js:31:28)
+    at file:///opt/homebrew/Cellar/gemini-cli/0.27.3/libexec/lib/node_modules/@google/gemini-cli/node_modules/@google/gemini-cli-core/dist/src/code_assist/server.js:40:44
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async LoggingContentGenerator.loggingStreamWrapper (file:///opt/homebrew/Cellar/gemini-cli/0.27.3/libexec/lib/node_modules/@google/gemini-cli/node_modules/@google/gemini-cli-core/dist/src/core/loggingContentGenerator.js:154:30)
+    at async GeminiChat.processStreamResponse (file:///opt/homebrew/Cellar/gemini-cli/0.27.3/libexec/lib/node_modules/@google/gemini-cli/node_modules/@google/gemini-cli-core/dist/src/core/geminiChat.js:585:26)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.27.3/libexec/lib/node_modules/@google/gemini-cli/node_modules/@google/gemini-cli-core/dist/src/core/geminiChat.js:255:42)
+    at async Turn.run (file:///opt/homebrew/Cellar/gemini-cli/0.27.3/libexec/lib/node_modules/@google/gemini-cli/node_modules/@google/gemini-cli-core/dist/src/core/turn.js:66:30)
+    at async GeminiClient.processTurn (file:///opt/homebrew/Cellar/gemini-cli/0.27.3/libexec/lib/node_modules/@google/gemini-cli/node_modules/@google/gemini-cli-core/dist/src/core/client.js:459:26)
+    at async GeminiClient.sendMessageStream (file:///opt/homebrew/Cellar/gemini-cli/0.27.3/libexec/lib/node_modules/@google/gemini-cli/node_modules/@google/gemini-cli-core/dist/src/core/client.js:558:20)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.27.3/libexec/lib/node_modules/@google/gemini-cli/dist/src/nonInteractiveCli.js:189:34
+An unexpected critical error occurred:[object Object]

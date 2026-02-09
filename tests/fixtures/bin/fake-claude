@@ -1,0 +1,9 @@
+#!/usr/bin/env node
+// Fake claude binary for testing
+const args = process.argv.slice(2);
+const prompt = args[args.length - 1] || '';
+if (prompt.includes('Reply with exactly: OK') || prompt === 'Reply with exactly: OK') {
+  process.stdout.write('OK\n');
+} else {
+  process.stdout.write('Claude response: I have analyzed the request.\n');
+}

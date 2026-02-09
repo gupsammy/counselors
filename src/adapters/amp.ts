@@ -1,0 +1,74 @@
+import { BaseAdapter } from './base.js';
+import type { RunRequest, Invocation, ExecResult, ToolReport, CostInfo } from '../types.js';
+import { AMP_SETTINGS_FILE } from '../constants.js';
+import { existsSync } from 'node:fs';
+
+export class AmpAdapter extends BaseAdapter {
+  id = 'amp';
+  displayName = 'Amp CLI';
+  commands = ['amp'];
+  installUrl = 'https://ampcode.com';
+  readOnly = { level: 'enforced' as const };
+  models = [
+    { id: 'smart', name: 'Smart — Opus 4.6, most capable', recommended: true },
+    { id: 'deep', name: 'Deep — GPT-5.2 Codex, extended thinking' },
+  ];
+
+  buildInvocation(req: RunRequest): Invocation {
+    const args = ['-m', req.model, '-x'];
+
+    if (req.readOnlyPolicy !== 'none' && existsSync(AMP_SETTINGS_FILE)) {
+      args.push('--settings-file', AMP_SETTINGS_FILE);
+    }
+
+    // Amp uses stdin for prompt delivery
+    // Append oracle instruction like the existing skill does
+    const stdinContent = req.prompt +
+      '\n\nUse the oracle tool to provide deeper reasoning and analysis on the most complex or critical aspects of this review.';
+
+    return { cmd: req.binary ?? 'amp', args, stdin: stdinContent, cwd: req.cwd };
+  }
+
+  parseResult(result: ExecResult): Partial<ToolReport> {
+    return {
+      ...super.parseResult(result),
+    };
+  }
+}
+
+/**
+ * Parse `amp usage` output to extract balance information.
+ */
+export function parseAmpUsage(output: string): { freeRemaining: number; freeTotal: number; creditsRemaining: number } {
+  const freeMatch = output.match(/Amp Free: \$([0-9.]+)\/\$([0-9.]+)/);
+  const creditsMatch = output.match(/Individual credits: \$([0-9.]+)/);
+
+  return {
+    freeRemaining: freeMatch ? parseFloat(freeMatch[1]) : 0,
+    freeTotal: freeMatch ? parseFloat(freeMatch[2]) : 0,
+    creditsRemaining: creditsMatch ? parseFloat(creditsMatch[1]) : 0,
+  };
+}
+
+/**
+ * Compute cost from before/after usage snapshots.
+ */
+export function computeAmpCost(
+  before: { freeRemaining: number; freeTotal: number; creditsRemaining: number },
+  after: { freeRemaining: number; freeTotal: number; creditsRemaining: number },
+): CostInfo {
+  const freeUsed = Math.max(0, before.freeRemaining - after.freeRemaining);
+  const creditsUsed = Math.max(0, before.creditsRemaining - after.creditsRemaining);
+  const totalCost = freeUsed + creditsUsed;
+  const source = creditsUsed > 0 ? 'credits' : 'free';
+
+  return {
+    cost_usd: Math.round(totalCost * 100) / 100,
+    free_used_usd: Math.round(freeUsed * 100) / 100,
+    credits_used_usd: Math.round(creditsUsed * 100) / 100,
+    source: source as 'free' | 'credits',
+    free_remaining_usd: after.freeRemaining,
+    free_total_usd: after.freeTotal,
+    credits_remaining_usd: after.creditsRemaining,
+  };
+}

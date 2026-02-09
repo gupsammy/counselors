@@ -1,0 +1,214 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { mkdirSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import type { Config } from '../../src/types.js';
+
+// We test the dispatch function with a mock executor
+vi.mock('../../src/core/executor.js', () => ({
+  execute: vi.fn().mockResolvedValue({
+    exitCode: 0,
+    stdout: 'mock output',
+    stderr: '',
+    timedOut: false,
+    durationMs: 100,
+  }),
+  captureAmpUsage: vi.fn().mockResolvedValue(null),
+  computeAmpCostFromSnapshots: vi.fn().mockReturnValue(null),
+}));
+
+const { dispatch } = await import('../../src/core/dispatcher.js');
+
+const testDir = join(tmpdir(), `counselors-dispatch-test-${Date.now()}`);
+
+beforeEach(() => {
+  mkdirSync(testDir, { recursive: true });
+});
+
+afterEach(() => {
+  rmSync(testDir, { recursive: true, force: true });
+});
+
+function makeConfig(tools: Config['tools']): Config {
+  return {
+    version: 1,
+    defaults: {
+      timeout: 10,
+      outputDir: testDir,
+      readOnly: 'bestEffort',
+      maxContextKb: 50,
+      maxParallel: 4,
+    },
+    tools,
+  };
+}
+
+describe('dispatch', () => {
+  it('throws when zero tools are eligible', async () => {
+    const config = makeConfig({
+      'my-custom': {
+        binary: '/usr/bin/custom',
+        defaultModel: 'test',
+        readOnly: { level: 'bestEffort' },
+        promptMode: 'argument',
+        modelFlag: '--model',
+        custom: true,
+      },
+    });
+
+    await expect(dispatch({
+      config,
+      toolIds: ['my-custom'],
+      promptFilePath: '/tmp/prompt.md',
+      promptContent: 'test',
+      outputDir: testDir,
+      readOnlyPolicy: 'enforced', // custom tool is bestEffort, so it gets filtered out
+      cwd: process.cwd(),
+    })).rejects.toThrow('No eligible tools after read-only policy filtering.');
+  });
+
+  it('sanitizes tool IDs with path traversal characters', async () => {
+    const config = makeConfig({
+      '../evil': {
+        binary: '/usr/bin/echo',
+        defaultModel: 'test',
+        readOnly: { level: 'enforced' },
+        promptMode: 'argument',
+        modelFlag: '--model',
+      },
+    });
+
+    const reports = await dispatch({
+      config,
+      toolIds: ['../evil'],
+      promptFilePath: '/tmp/prompt.md',
+      promptContent: 'test',
+      outputDir: testDir,
+      readOnlyPolicy: 'none',
+      cwd: process.cwd(),
+    });
+
+    expect(reports).toHaveLength(1);
+    // Output file should use sanitized ID: ../evil → .._evil
+    expect(reports[0].outputFile).toContain('.._evil.md');
+    expect(reports[0].outputFile).not.toContain('/../');
+  });
+
+  it('calls onProgress with started and completed events', async () => {
+    const config = makeConfig({
+      claude: {
+        binary: '/usr/bin/claude',
+        defaultModel: 'opus',
+        readOnly: { level: 'enforced' },
+        promptMode: 'argument',
+        modelFlag: '--model',
+      },
+    });
+
+    const events: { toolId: string; event: string }[] = [];
+
+    await dispatch({
+      config,
+      toolIds: ['claude'],
+      promptFilePath: '/tmp/prompt.md',
+      promptContent: 'test',
+      outputDir: testDir,
+      readOnlyPolicy: 'none',
+      cwd: process.cwd(),
+      onProgress: (e) => events.push({ toolId: e.toolId, event: e.event }),
+    });
+
+    expect(events).toHaveLength(2);
+    expect(events[0]).toEqual({ toolId: 'claude', event: 'started' });
+    expect(events[1]).toEqual({ toolId: 'claude', event: 'completed' });
+  });
+
+  it('includes report in completed progress event', async () => {
+    const config = makeConfig({
+      claude: {
+        binary: '/usr/bin/claude',
+        defaultModel: 'opus',
+        readOnly: { level: 'enforced' },
+        promptMode: 'argument',
+        modelFlag: '--model',
+      },
+    });
+
+    let completedReport: any = null;
+
+    await dispatch({
+      config,
+      toolIds: ['claude'],
+      promptFilePath: '/tmp/prompt.md',
+      promptContent: 'test',
+      outputDir: testDir,
+      readOnlyPolicy: 'none',
+      cwd: process.cwd(),
+      onProgress: (e) => {
+        if (e.event === 'completed') completedReport = e.report;
+      },
+    });
+
+    expect(completedReport).not.toBeNull();
+    expect(completedReport.toolId).toBe('claude');
+    expect(completedReport.model).toBe('opus');
+    expect(completedReport.status).toBe('success');
+  });
+
+  it('works without onProgress callback', async () => {
+    const config = makeConfig({
+      claude: {
+        binary: '/usr/bin/claude',
+        defaultModel: 'opus',
+        readOnly: { level: 'enforced' },
+        promptMode: 'argument',
+        modelFlag: '--model',
+      },
+    });
+
+    const reports = await dispatch({
+      config,
+      toolIds: ['claude'],
+      promptFilePath: '/tmp/prompt.md',
+      promptContent: 'test',
+      outputDir: testDir,
+      readOnlyPolicy: 'none',
+      cwd: process.cwd(),
+    });
+
+    expect(reports).toHaveLength(1);
+    expect(reports[0].status).toBe('success');
+  });
+
+  it('filters tools by read-only policy', async () => {
+    const config = makeConfig({
+      claude: {
+        binary: '/usr/bin/claude',
+        defaultModel: 'opus',
+        readOnly: { level: 'enforced' },
+        promptMode: 'argument',
+        modelFlag: '--model',
+      },
+      gemini: {
+        binary: '/usr/bin/gemini',
+        defaultModel: 'pro',
+        readOnly: { level: 'bestEffort' },
+        promptMode: 'argument',
+        modelFlag: '-m',
+      },
+    });
+
+    // With none policy, all tools should be eligible
+    const reports = await dispatch({
+      config,
+      toolIds: ['claude', 'gemini'],
+      promptFilePath: '/tmp/prompt.md',
+      promptContent: 'test',
+      outputDir: testDir,
+      readOnlyPolicy: 'none',
+      cwd: process.cwd(),
+    });
+
+    expect(reports).toHaveLength(2);
+  });
+});

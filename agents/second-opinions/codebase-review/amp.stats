@@ -1,0 +1,11 @@
+{
+  "cost": {
+    "cost_usd": 2.35,
+    "free_used_usd": 0.00,
+    "credits_used_usd": 2.35,
+    "source": "credits",
+    "free_remaining_usd": 19.98,
+    "free_total_usd": 20,
+    "credits_remaining_usd": 12.81
+  }
+}

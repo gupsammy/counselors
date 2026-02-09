@@ -1,0 +1,242 @@
+OpenAI Codex v0.98.0 (research preview)
+--------
+workdir: /Users/aaron/Code/counselors
+model: gpt-5.3-codex
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: xhigh
+reasoning summaries: auto
+session id: 019c4248-b305-79b2-b901-6aee7692043c
+--------
+user
+Read the file at /Users/aaron/Code/counselors/agents/second-opinions/second-opinion-npm-cli-plan/prompt.md and follow the instructions within it.
+deprecated: `[features].web_search_request` is deprecated. Use `web_search` instead.
+  Set `web_search` to `"live"`, `"cached"`, or `"disabled"` at the top level (or under a profile) in config.toml.
+mcp startup: no servers
+
+thinking
+**Starting file inspection**
+codex
+I’m going to open `agents/second-opinions/second-opinion-npm-cli-plan/prompt.md` first, extract its exact instructions, then execute them step by step in this workspace.
+exec
+/bin/zsh -lc 'cat /Users/aaron/Code/counselors/agents/second-opinions/second-opinion-npm-cli-plan/prompt.md' in /Users/aaron/Code/counselors succeeded in 52ms:
+/Users/aaron/.rvm/scripts/rvm:29: operation not permitted: ps
+# Second Opinion Request
+
+## Question
+I want to turn the "second-opinion" Claude Code skill into a standalone npm CLI tool called `counselors`. The tool should allow users to:
+- Add AI coding tools (claude, codex, gemini, amp, and more)
+- Configure tools with models, flags, and read-only settings
+- Test tools to verify they work
+- Remove tools
+- Find the correct binaries on their system (auto-discovery)
+- Suggest ways to run tools in "read-only" mode
+- Dispatch multiple tools in parallel to get second opinions on code/architecture
+
+Review the existing skill and the reference tool discovery system below, and propose a comprehensive plan for the npm CLI tool architecture.
+
+## Context
+
+### Existing Second-Opinion Skill
+
+The skill lives at `~/.claude/skills/second-opinion/` and consists of:
+
+thinking
+**Drafting comprehensive architecture plan**
+codex
+I’ve extracted the prompt and I’m now producing the architecture proposal directly from it, including command design, config schema, discovery strategy, read-only enforcement model, and parallel execution tradeoffs.
+
+thinking
+**Outlining detailed final architecture**
+codex
+**Recommendation**
+Build `counselors` as a TypeScript CLI with a strict separation between:
+- `Registry` (what each tool supports),
+- `Resolution` (where the binary is and which config applies),
+- `Execution` (how processes are run, timed out, and collected).
+
+Do not port the existing shell orchestration as-is. Keep the workflow, but move behavior into typed Node modules so it is testable and cross-platform.
+
+**CLI Surface**
+Use noun-based command groups to keep it scalable:
+
+1. `counselors tools add <tool-id>`
+2. `counselors tools remove <instance-id>`
+3. `counselors tools list`
+4. `counselors tools test [instance-id|--all]`
+5. `counselors tools discover [tool-id|--all]`
+6. `counselors tools readonly [instance-id]` (show recommended/supported read-only mode)
+7. `counselors run --prompt-file <file> --tools <a,b,c> [--model tool=model] [--read-only strict|best-effort|off] [--parallel N] [--timeout-sec N]`
+8. `counselors doctor` (full preflight: binaries, versions, readonly capability, permissions)
+
+Opinionated choice: keep “review workflow orchestration” in `run`, not many top-level verbs.
+
+**Project Structure**
+```text
+src/
+  cli.ts
+  commands/
+    tools-add.ts
+    tools-remove.ts
+    tools-list.ts
+    tools-test.ts
+    tools-discover.ts
+    tools-readonly.ts
+    run.ts
+    doctor.ts
+  core/
+    registry.ts
+    discovery.ts
+    config.ts
+    readonly.ts
+    executor.ts
+    dispatch.ts
+    synthesis.ts
+    templates.ts
+  adapters/
+    claude.ts
+    codex.ts
+    gemini.ts
+    amp.ts
+  types/
+    config.ts
+    tool.ts
+    result.ts
+```
+
+**Configuration Format**
+Use JSON (not YAML) for v1.
+- Reason: safer quoting, easier schema validation, less parser ambiguity for command templates.
+- Global config: `~/.config/counselors/config.json` (use `env-paths` for OS portability).
+- Project override: `<repo>/.counselors.json`.
+- Merge order: built-in defaults < global < project < CLI flags.
+
+Example shape:
+```json
+{
+  "version": 1,
+  "defaults": {
+    "parallel": 3,
+    "timeoutSec": 540,
+    "readOnly": "best-effort"
+  },
+  "tools": {
+    "claude-main": {
+      "tool": "claude",
+      "binaryPath": "/usr/local/bin/claude",
+      "model": "sonnet",
+      "enabled": true
+    }
+  }
+}
+```
+
+Validate with `zod` and ship a JSON schema.
+
+**Binary Discovery (Node.js)**
+Use a two-stage discovery system, matching your reference design:
+
+1. Stage 1: `which` lookup from current `PATH`.
+2. Stage 2: manual scan of extended paths:
+- `~/.local/bin`, `/usr/local/bin`, `/opt/homebrew/bin`
+- `~/.npm-global/bin`
+- `$NVM_BIN`, plus recent `~/.nvm/versions/node/*/bin`
+- `$FNM_MULTISHELL_PATH/bin`, plus `~/.local/share/fnm/aliases/default/bin`
+- `~/.opencode/bin`
+- user overrides from config
+
+Validation rules:
+- file exists
+- executable bit / runnable on platform
+- optional smoke check (`<cmd> --version` with short timeout)
+
+Do not rely on a single package API for this; compose `which` + manual `fs` scan + explicit validation.
+
+**Read-Only Mode: Suggestion vs Enforcement**
+Treat read-only as capability-graded, not binary:
+
+- `enforced`: tool has real sandbox/readonly flags (e.g., codex-style sandbox).
+- `restricted`: tool allows limiting toolset/permissions but not full filesystem immutability.
+- `advisory`: only prompt-level instruction possible.
+
+Implement a per-tool read-only profile:
+- args to enable readonly/restricted mode
+- env vars/settings file requirements
+- confidence level (`enforced|restricted|advisory`)
+- explanation shown in `tools readonly`
+
+Run policy:
+- `--read-only strict`: fail if any selected tool is below `enforced`.
+- `--read-only best-effort`: apply strongest available mode per tool and warn.
+- `--read-only off`: no restrictions.
+
+This avoids lying to users about safety.
+
+**Testing Protocol**
+Keep the “reply exactly OK” protocol, but add layers:
+
+1. Binary test: executable found + `--version`.
+2. Invocation test: 30s timeout, minimal prompt, expected token `OK`.
+3. Read-only test: run a prompt that asks for file write and verify refusal behavior when enforceable.
+4. Result grading: `pass|warn|fail` with explicit reason.
+
+Store test reports in structured JSON for automation.
+
+**Parallel Dispatch**
+Use `child_process.spawn` (or `execa`) + `p-limit` queue.
+- Worker threads are the wrong abstraction; this is process I/O orchestration.
+- Per task: timeout, kill escalation (`SIGTERM` then `SIGKILL`), stdout/stderr capture.
+- Per run: deterministic output directory with manifest.
+
+Recommended run artifact layout:
+```text
+.counselors/runs/<timestamp>/
+  run.json
+  prompt.md
+  <tool-id>.out.txt
+  <tool-id>.err.txt
+  <tool-id>.stats.json
+  synthesis.md
+```
+
+**Plugins / Custom Tools**
+Yes, support extensibility, but do it in two phases:
+
+1. v1: config-defined custom tools (command + args template + prompt mode + readonly profile metadata).
+2. v2: package plugins (npm) with signed/allowlisted loading.
+
+Do not execute arbitrary plugin JS in v1. That is a security and stability trap.
+
+**Registry vs Executor Abstraction**
+Right level:
+- `ToolDefinition` (static metadata, defaults, install URL, capabilities)
+- `ToolInstance` (user-configured instance bound to discovered binary/model)
+- `Adapter` (tool-specific command builder/parser only where needed)
+- `Executor` (generic process runner)
+- `Dispatcher` (parallel fan-out/fan-in orchestration)
+- `Synthesizer` (optional post-processing)
+
+Avoid hardcoding tool-specific logic in dispatcher/executor.
+
+**Risks and Blind Spots**
+- CLI flag drift across tool versions will break adapters unless version-aware.
+- “Read-only” can be misleading without strict capability labeling.
+- Cross-platform quoting/escaping bugs are common with templated args.
+- Parallel fan-out can explode cost; add per-run budget limits early.
+- Synthesis quality can hide dissent; preserve raw outputs and confidence markers.
+- Path discovery in managed shells (nvm/fnm) is brittle; test on macOS/Linux/Windows CI.
+
+**Concrete Implementation Order**
+1. Core types + config loader/validator + registry.
+2. Discovery engine + `doctor` + `tools discover`.
+3. Adapters for `claude`, `codex`, `gemini`, `amp`.
+4. `tools add/remove/list/test/readonly`.
+5. `run` with parallel dispatch and run artifacts.
+6. Basic synthesis and machine-readable summaries.
+7. Custom tool definitions (config-based).
+8. Budget controls, retries, and richer diagnostics.
+
+This gives you a stable base quickly, without locking into brittle shell-script behavior.
+tokens used
+8,112
