@@ -169,6 +169,10 @@ counselors agent
 
 The skill template provides a multi-phase workflow: gather context, select agents, assemble prompt, dispatch via `counselors run`, read results, and synthesize a combined answer.
 
+## Known Issues
+
+- **Amp `deep` model ignores `Read` tool when `read_web_page` is enabled** (Amp v0.0.1770317189). When the `amp-readonly-settings.json` whitelist includes both `Read` and `read_web_page`, the `deep` model (GPT-5.2 Codex) routes local file reads through `read_web_page` instead of `Read`, which fails on `file://` URLs. The `smart` model (Opus 4.6) is unaffected. Workaround: use `amp-smart` for tasks that require local file access, or remove `read_web_page` from `amp.tools.enable`.
+
 ## License
 
 MIT
