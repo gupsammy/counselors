@@ -56,7 +56,13 @@ Be selective — don't dump the entire codebase. Pick the most relevant code sec
 
    Do NOT combine agents into preset groups (e.g. "claude + codex + gemini"). Each option must be a single agent or "All".
 
-3. Wait for the user's selection before proceeding. You'll pass these as \`--tools\` in Phase 4.
+3. Wait for the user's selection before proceeding.
+
+4. **MANDATORY: Confirm the selection before continuing.** After the user picks agents, echo back the exact list you will dispatch to:
+
+   > Dispatching to: **claude-opus**, **codex-5.3-high**, **gemini-pro**
+
+   Then ask the user to confirm (e.g. "Look good?") before proceeding to Phase 3. This prevents silent tool omissions. If the user corrects the list, update your selection accordingly.
 
 ---
 

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { loadConfig, loadProjectConfig, saveConfig, mergeConfigs, addToolToConfig, removeToolFromConfig, getConfiguredTools } from '../../src/core/config.js';
+import { loadConfig, loadProjectConfig, saveConfig, mergeConfigs, addToolToConfig, removeToolFromConfig, renameToolInConfig, getConfiguredTools } from '../../src/core/config.js';
 import type { Config, ToolConfig } from '../../src/types.js';
 
 const testDir = join(tmpdir(), `counselors-test-${Date.now()}`);
@@ -166,5 +166,42 @@ describe('addToolToConfig / removeToolFromConfig', () => {
     config = removeToolFromConfig(config, 'test-tool');
     expect(config.tools['test-tool']).toBeUndefined();
     expect(getConfiguredTools(config)).not.toContain('test-tool');
+  });
+});
+
+describe('renameToolInConfig', () => {
+  const baseTool: ToolConfig = {
+    binary: '/bin/test',
+    defaultModel: 'opus',
+    readOnly: { level: 'enforced' },
+    promptMode: 'argument',
+    modelFlag: '--model',
+  };
+
+  const baseConfig: Config = {
+    version: 1,
+    defaults: { timeout: 540, outputDir: './agents/counselors', readOnly: 'bestEffort', maxContextKb: 50, maxParallel: 4 },
+    tools: { 'old-name': baseTool },
+  };
+
+  it('moves tool config to new key', () => {
+    const updated = renameToolInConfig(baseConfig, 'old-name', 'new-name');
+    expect(updated.tools['new-name']).toBeDefined();
+    expect(updated.tools['old-name']).toBeUndefined();
+  });
+
+  it('preserves all tool settings', () => {
+    const toolWithExtras: ToolConfig = { ...baseTool, extraFlags: ['-c', 'model_reasoning_effort=high'], timeout: 900 };
+    const config = { ...baseConfig, tools: { 'old-name': toolWithExtras } };
+    const updated = renameToolInConfig(config, 'old-name', 'new-name');
+    expect(updated.tools['new-name'].extraFlags).toEqual(['-c', 'model_reasoning_effort=high']);
+    expect(updated.tools['new-name'].timeout).toBe(900);
+    expect(updated.tools['new-name'].binary).toBe('/bin/test');
+  });
+
+  it('does not mutate original config', () => {
+    const updated = renameToolInConfig(baseConfig, 'old-name', 'new-name');
+    expect(baseConfig.tools['old-name']).toBeDefined();
+    expect(updated).not.toBe(baseConfig);
   });
 });
