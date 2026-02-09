@@ -1,9 +1,9 @@
 import type { ToolAdapter, ToolConfig } from '../types.js';
+import { AmpAdapter } from './amp.js';
 import { ClaudeAdapter } from './claude.js';
 import { CodexAdapter } from './codex.js';
-import { GeminiAdapter } from './gemini.js';
-import { AmpAdapter } from './amp.js';
 import { CustomAdapter } from './custom.js';
+import { GeminiAdapter } from './gemini.js';
 
 const builtInAdapters: Record<string, () => ToolAdapter> = {
   claude: () => new ClaudeAdapter(),
@@ -19,11 +19,13 @@ export function getAdapter(id: string, config?: ToolConfig): ToolAdapter {
   if (config) {
     return new CustomAdapter(id, config);
   }
-  throw new Error(`Unknown tool: ${id}. Use "counselors tools add" to configure it.`);
+  throw new Error(
+    `Unknown tool: ${id}. Use "counselors tools add" to configure it.`,
+  );
 }
 
 export function getAllBuiltInAdapters(): ToolAdapter[] {
-  return Object.values(builtInAdapters).map(fn => fn());
+  return Object.values(builtInAdapters).map((fn) => fn());
 }
 
 export function isBuiltInTool(id: string): boolean {
@@ -34,7 +36,12 @@ export function getBuiltInToolIds(): string[] {
   return Object.keys(builtInAdapters);
 }
 
-export function resolveAdapter(id: string, toolConfig: ToolConfig): ToolAdapter {
+export function resolveAdapter(
+  id: string,
+  toolConfig: ToolConfig,
+): ToolAdapter {
   const baseId = toolConfig.adapter ?? id;
-  return isBuiltInTool(baseId) ? getAdapter(baseId) : new CustomAdapter(id, toolConfig);
+  return isBuiltInTool(baseId)
+    ? getAdapter(baseId)
+    : new CustomAdapter(id, toolConfig);
 }

@@ -1,7 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdirSync, rmSync, readFileSync, readdirSync, symlinkSync } from 'node:fs';
-import { join } from 'node:path';
+import {
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { safeWriteFile } from '../../src/core/fs-utils.js';
 
 const testDir = join(tmpdir(), `counselors-fs-test-${Date.now()}`);

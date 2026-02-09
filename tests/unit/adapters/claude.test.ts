@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { ClaudeAdapter } from '../../../src/adapters/claude.js';
 import type { RunRequest } from '../../../src/types.js';
 

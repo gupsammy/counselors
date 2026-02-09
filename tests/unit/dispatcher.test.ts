@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mkdirSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Config } from '../../src/types.js';
 
 // We test the dispatch function with a mock executor
@@ -56,15 +56,17 @@ describe('dispatch', () => {
       },
     });
 
-    await expect(dispatch({
-      config,
-      toolIds: ['my-custom'],
-      promptFilePath: '/tmp/prompt.md',
-      promptContent: 'test',
-      outputDir: testDir,
-      readOnlyPolicy: 'enforced', // custom tool is bestEffort, so it gets filtered out
-      cwd: process.cwd(),
-    })).rejects.toThrow('No eligible tools after read-only policy filtering.');
+    await expect(
+      dispatch({
+        config,
+        toolIds: ['my-custom'],
+        promptFilePath: '/tmp/prompt.md',
+        promptContent: 'test',
+        outputDir: testDir,
+        readOnlyPolicy: 'enforced', // custom tool is bestEffort, so it gets filtered out
+        cwd: process.cwd(),
+      }),
+    ).rejects.toThrow('No eligible tools after read-only policy filtering.');
   });
 
   it('sanitizes tool IDs with path traversal characters', async () => {

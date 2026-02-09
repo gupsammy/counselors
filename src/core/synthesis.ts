@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { RunManifest, ToolReport } from '../types.js';
 
@@ -10,7 +10,7 @@ export function synthesize(manifest: RunManifest, outputDir: string): string {
     '# Run Summary',
     '',
     `**Prompt:** ${manifest.prompt.slice(0, 100)}${manifest.prompt.length > 100 ? '...' : ''}`,
-    `**Tools:** ${manifest.tools.map(t => t.toolId).join(', ')}`,
+    `**Tools:** ${manifest.tools.map((t) => t.toolId).join(', ')}`,
     `**Policy:** read-only=${manifest.readOnlyPolicy}`,
     '',
   ];
@@ -19,7 +19,12 @@ export function synthesize(manifest: RunManifest, outputDir: string): string {
   parts.push('## Results', '');
 
   for (const report of manifest.tools) {
-    const icon = report.status === 'success' ? '✓' : report.status === 'timeout' ? '⏱' : '✗';
+    const icon =
+      report.status === 'success'
+        ? '✓'
+        : report.status === 'timeout'
+          ? '⏱'
+          : '✗';
     const duration = (report.durationMs / 1000).toFixed(1);
     parts.push(`### ${icon} ${report.toolId} (${report.model})`);
     parts.push('');
@@ -28,7 +33,9 @@ export function synthesize(manifest: RunManifest, outputDir: string): string {
     parts.push(`- Word count: ${report.wordCount}`);
 
     if (report.cost) {
-      parts.push(`- Cost: $${report.cost.cost_usd.toFixed(2)} (${report.cost.source})`);
+      parts.push(
+        `- Cost: $${report.cost.cost_usd.toFixed(2)} (${report.cost.source})`,
+      );
     }
 
     if (report.status === 'error' && report.error) {
@@ -50,14 +57,16 @@ export function synthesize(manifest: RunManifest, outputDir: string): string {
   }
 
   // Cost table (if any tools have cost info)
-  const costsAvailable = manifest.tools.filter(t => t.cost);
+  const costsAvailable = manifest.tools.filter((t) => t.cost);
   if (costsAvailable.length > 0) {
     parts.push('## Cost Summary', '');
     parts.push('| Tool | Cost | Source | Remaining |');
     parts.push('|------|------|--------|-----------|');
     for (const t of costsAvailable) {
       const c = t.cost!;
-      parts.push(`| ${t.toolId} | $${c.cost_usd.toFixed(2)} | ${c.source} | $${c.source === 'credits' ? c.credits_remaining_usd.toFixed(2) : c.free_remaining_usd.toFixed(2)} |`);
+      parts.push(
+        `| ${t.toolId} | $${c.cost_usd.toFixed(2)} | ${c.source} | $${c.source === 'credits' ? c.credits_remaining_usd.toFixed(2) : c.free_remaining_usd.toFixed(2)} |`,
+      );
     }
     parts.push('');
   }

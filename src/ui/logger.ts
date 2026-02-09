@@ -1,5 +1,5 @@
 function isDebug(): boolean {
-  return process.env['DEBUG'] === '1' || process.env['DEBUG'] === 'counselors';
+  return process.env.DEBUG === '1' || process.env.DEBUG === 'counselors';
 }
 
 export function debug(msg: string): void {

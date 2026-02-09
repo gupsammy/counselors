@@ -1,8 +1,8 @@
 import type { Command } from 'commander';
 import { getAllBuiltInAdapters } from '../../adapters/index.js';
 import { discoverTool } from '../../core/discovery.js';
-import { formatDiscoveryResults, createSpinner } from '../../ui/output.js';
 import { info } from '../../ui/logger.js';
+import { createSpinner, formatDiscoveryResults } from '../../ui/output.js';
 
 export function registerDiscoverCommand(program: Command): void {
   program

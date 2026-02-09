@@ -1,8 +1,12 @@
-import type { Command } from 'commander';
 import { checkbox } from '@inquirer/prompts';
-import { loadConfig, saveConfig, removeToolFromConfig } from '../../core/config.js';
+import type { Command } from 'commander';
+import {
+  loadConfig,
+  removeToolFromConfig,
+  saveConfig,
+} from '../../core/config.js';
+import { error, info, success } from '../../ui/logger.js';
 import { confirmAction } from '../../ui/prompts.js';
-import { success, error, info } from '../../ui/logger.js';
 
 export function registerRemoveCommand(program: Command): void {
   program
@@ -30,7 +34,10 @@ export function registerRemoveCommand(program: Command): void {
       } else {
         toRemove = await checkbox({
           message: 'Select tools to remove:',
-          choices: toolIds.map(id => ({ name: `${id} (${config.tools[id].binary})`, value: id })),
+          choices: toolIds.map((id) => ({
+            name: `${id} (${config.tools[id].binary})`,
+            value: id,
+          })),
         });
 
         if (toRemove.length === 0) {

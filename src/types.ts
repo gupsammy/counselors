@@ -31,13 +31,17 @@ export type ToolConfig = z.infer<typeof ToolConfigSchema>;
 
 export const ConfigSchema = z.object({
   version: z.literal(1),
-  defaults: z.object({
-    timeout: z.number().default(540),
-    outputDir: z.string().default('./agents/counselors'),
-    readOnly: z.enum(['enforced', 'bestEffort', 'none']).default('bestEffort'),
-    maxContextKb: z.number().default(50),
-    maxParallel: z.number().default(4),
-  }).default({}),
+  defaults: z
+    .object({
+      timeout: z.number().default(540),
+      outputDir: z.string().default('./agents/counselors'),
+      readOnly: z
+        .enum(['enforced', 'bestEffort', 'none'])
+        .default('bestEffort'),
+      maxContextKb: z.number().default(50),
+      maxParallel: z.number().default(4),
+    })
+    .default({}),
   tools: z.record(z.string(), ToolConfigSchema).default({}),
 });
 
@@ -105,7 +109,13 @@ export interface ToolAdapter {
   commands: string[];
   installUrl: string;
   readOnly: { level: ReadOnlyLevel };
-  models: { id: string; name: string; recommended?: boolean; compoundId?: string; extraFlags?: string[] }[];
+  models: {
+    id: string;
+    name: string;
+    recommended?: boolean;
+    compoundId?: string;
+    extraFlags?: string[];
+  }[];
   buildInvocation(req: RunRequest): Invocation;
   parseResult?(result: ExecResult): Partial<ToolReport>;
 }

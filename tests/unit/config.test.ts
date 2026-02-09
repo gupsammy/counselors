@@ -1,8 +1,17 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { loadConfig, loadProjectConfig, saveConfig, mergeConfigs, addToolToConfig, removeToolFromConfig, renameToolInConfig, getConfiguredTools } from '../../src/core/config.js';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  addToolToConfig,
+  getConfiguredTools,
+  loadConfig,
+  loadProjectConfig,
+  mergeConfigs,
+  removeToolFromConfig,
+  renameToolInConfig,
+  saveConfig,
+} from '../../src/core/config.js';
 import type { Config, ToolConfig } from '../../src/types.js';
 
 const testDir = join(tmpdir(), `counselors-test-${Date.now()}`);
@@ -28,7 +37,13 @@ describe('loadConfig', () => {
   it('loads valid config file', () => {
     const validConfig = {
       version: 1,
-      defaults: { timeout: 300, outputDir: './out', readOnly: 'enforced', maxContextKb: 100, maxParallel: 2 },
+      defaults: {
+        timeout: 300,
+        outputDir: './out',
+        readOnly: 'enforced',
+        maxContextKb: 100,
+        maxParallel: 2,
+      },
       tools: {
         claude: {
           binary: '/usr/bin/claude',
@@ -43,8 +58,8 @@ describe('loadConfig', () => {
     const config = loadConfig(testConfigFile);
     expect(config.version).toBe(1);
     expect(config.defaults.timeout).toBe(300);
-    expect(config.tools['claude']).toBeDefined();
-    expect(config.tools['claude'].binary).toBe('/usr/bin/claude');
+    expect(config.tools.claude).toBeDefined();
+    expect(config.tools.claude.binary).toBe('/usr/bin/claude');
   });
 
   it('throws on invalid config', () => {
@@ -57,7 +72,13 @@ describe('saveConfig', () => {
   it('writes config to file', () => {
     const config: Config = {
       version: 1,
-      defaults: { timeout: 540, outputDir: './agents/counselors', readOnly: 'bestEffort', maxContextKb: 50, maxParallel: 4 },
+      defaults: {
+        timeout: 540,
+        outputDir: './agents/counselors',
+        readOnly: 'bestEffort',
+        maxContextKb: 50,
+        maxParallel: 4,
+      },
       tools: {},
     };
     saveConfig(config, testConfigFile);
@@ -71,8 +92,22 @@ describe('mergeConfigs', () => {
   it('merges global and project configs (defaults only, not tools)', () => {
     const global: Config = {
       version: 1,
-      defaults: { timeout: 540, outputDir: './agents/counselors', readOnly: 'bestEffort', maxContextKb: 50, maxParallel: 4 },
-      tools: { claude: { binary: '/bin/claude', defaultModel: 'opus', readOnly: { level: 'enforced' }, promptMode: 'argument', modelFlag: '--model' } },
+      defaults: {
+        timeout: 540,
+        outputDir: './agents/counselors',
+        readOnly: 'bestEffort',
+        maxContextKb: 50,
+        maxParallel: 4,
+      },
+      tools: {
+        claude: {
+          binary: '/bin/claude',
+          defaultModel: 'opus',
+          readOnly: { level: 'enforced' },
+          promptMode: 'argument',
+          modelFlag: '--model',
+        },
+      },
     };
     const project = {
       defaults: { timeout: 300 },
@@ -80,14 +115,28 @@ describe('mergeConfigs', () => {
     const merged = mergeConfigs(global, project);
     expect(merged.defaults.timeout).toBe(300);
     expect(merged.defaults.maxParallel).toBe(4); // from global
-    expect(merged.tools['claude']).toBeDefined();
+    expect(merged.tools.claude).toBeDefined();
   });
 
   it('ignores tools from project config', () => {
     const global: Config = {
       version: 1,
-      defaults: { timeout: 540, outputDir: './agents/counselors', readOnly: 'bestEffort', maxContextKb: 50, maxParallel: 4 },
-      tools: { claude: { binary: '/bin/claude', defaultModel: 'opus', readOnly: { level: 'enforced' }, promptMode: 'argument', modelFlag: '--model' } },
+      defaults: {
+        timeout: 540,
+        outputDir: './agents/counselors',
+        readOnly: 'bestEffort',
+        maxContextKb: 50,
+        maxParallel: 4,
+      },
+      tools: {
+        claude: {
+          binary: '/bin/claude',
+          defaultModel: 'opus',
+          readOnly: { level: 'enforced' },
+          promptMode: 'argument',
+          modelFlag: '--model',
+        },
+      },
     };
     // Even if somehow a project config had tools, they should not be merged
     const project = { defaults: { timeout: 300 } };
@@ -99,7 +148,13 @@ describe('mergeConfigs', () => {
   it('applies CLI flags over everything', () => {
     const global: Config = {
       version: 1,
-      defaults: { timeout: 540, outputDir: './agents/counselors', readOnly: 'bestEffort', maxContextKb: 50, maxParallel: 4 },
+      defaults: {
+        timeout: 540,
+        outputDir: './agents/counselors',
+        readOnly: 'bestEffort',
+        maxContextKb: 50,
+        maxParallel: 4,
+      },
       tools: {},
     };
     const merged = mergeConfigs(global, null, { timeout: 60 });
@@ -121,17 +176,31 @@ describe('loadProjectConfig', () => {
   });
 
   it('parses valid project config with defaults', () => {
-    writeFileSync(join(testDir, '.counselors.json'), JSON.stringify({ defaults: { timeout: 120 } }));
+    writeFileSync(
+      join(testDir, '.counselors.json'),
+      JSON.stringify({ defaults: { timeout: 120 } }),
+    );
     const result = loadProjectConfig(testDir);
     expect(result).toBeDefined();
-    expect(result!.defaults!.timeout).toBe(120);
+    expect(result?.defaults?.timeout).toBe(120);
   });
 
   it('strips tools from project config (security boundary)', () => {
-    writeFileSync(join(testDir, '.counselors.json'), JSON.stringify({
-      defaults: { timeout: 120 },
-      tools: { evil: { binary: '/tmp/evil', defaultModel: 'x', readOnly: { level: 'none' }, promptMode: 'argument', modelFlag: '--m' } },
-    }));
+    writeFileSync(
+      join(testDir, '.counselors.json'),
+      JSON.stringify({
+        defaults: { timeout: 120 },
+        tools: {
+          evil: {
+            binary: '/tmp/evil',
+            defaultModel: 'x',
+            readOnly: { level: 'none' },
+            promptMode: 'argument',
+            modelFlag: '--m',
+          },
+        },
+      }),
+    );
     const result = loadProjectConfig(testDir);
     // The Zod schema only picks 'defaults', so tools should not be present
     expect((result as any).tools).toBeUndefined();
@@ -147,7 +216,13 @@ describe('addToolToConfig / removeToolFromConfig', () => {
   it('adds and removes tools', () => {
     let config: Config = {
       version: 1,
-      defaults: { timeout: 540, outputDir: './agents/counselors', readOnly: 'bestEffort', maxContextKb: 50, maxParallel: 4 },
+      defaults: {
+        timeout: 540,
+        outputDir: './agents/counselors',
+        readOnly: 'bestEffort',
+        maxContextKb: 50,
+        maxParallel: 4,
+      },
       tools: {},
     };
 
@@ -180,7 +255,13 @@ describe('renameToolInConfig', () => {
 
   const baseConfig: Config = {
     version: 1,
-    defaults: { timeout: 540, outputDir: './agents/counselors', readOnly: 'bestEffort', maxContextKb: 50, maxParallel: 4 },
+    defaults: {
+      timeout: 540,
+      outputDir: './agents/counselors',
+      readOnly: 'bestEffort',
+      maxContextKb: 50,
+      maxParallel: 4,
+    },
     tools: { 'old-name': baseTool },
   };
 
@@ -191,10 +272,17 @@ describe('renameToolInConfig', () => {
   });
 
   it('preserves all tool settings', () => {
-    const toolWithExtras: ToolConfig = { ...baseTool, extraFlags: ['-c', 'model_reasoning_effort=high'], timeout: 900 };
+    const toolWithExtras: ToolConfig = {
+      ...baseTool,
+      extraFlags: ['-c', 'model_reasoning_effort=high'],
+      timeout: 900,
+    };
     const config = { ...baseConfig, tools: { 'old-name': toolWithExtras } };
     const updated = renameToolInConfig(config, 'old-name', 'new-name');
-    expect(updated.tools['new-name'].extraFlags).toEqual(['-c', 'model_reasoning_effort=high']);
+    expect(updated.tools['new-name'].extraFlags).toEqual([
+      '-c',
+      'model_reasoning_effort=high',
+    ]);
     expect(updated.tools['new-name'].timeout).toBe(900);
     expect(updated.tools['new-name'].binary).toBe('/bin/test');
   });

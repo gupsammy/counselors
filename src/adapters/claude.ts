@@ -1,5 +1,5 @@
+import type { Invocation, RunRequest } from '../types.js';
 import { BaseAdapter } from './base.js';
-import type { RunRequest, Invocation } from '../types.js';
 
 export class ClaudeAdapter extends BaseAdapter {
   id = 'claude';
@@ -15,16 +15,14 @@ export class ClaudeAdapter extends BaseAdapter {
 
   buildInvocation(req: RunRequest): Invocation {
     const instruction = `Read the file at ${req.promptFilePath} and follow the instructions within it.`;
-    const args = [
-      '-p',
-      '--model', req.model,
-      '--output-format', 'text',
-    ];
+    const args = ['-p', '--model', req.model, '--output-format', 'text'];
 
     if (req.readOnlyPolicy !== 'none') {
       args.push(
-        '--tools', 'Read,Glob,Grep,WebFetch,WebSearch',
-        '--allowedTools', 'Read,Glob,Grep,WebFetch,WebSearch',
+        '--tools',
+        'Read,Glob,Grep,WebFetch,WebSearch',
+        '--allowedTools',
+        'Read,Glob,Grep,WebFetch,WebSearch',
         '--strict-mcp-config',
       );
     }

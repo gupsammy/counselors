@@ -1,5 +1,5 @@
+import type { Invocation, RunRequest } from '../types.js';
 import { BaseAdapter } from './base.js';
-import type { RunRequest, Invocation } from '../types.js';
 
 export class CodexAdapter extends BaseAdapter {
   id = 'codex';
@@ -8,9 +8,25 @@ export class CodexAdapter extends BaseAdapter {
   installUrl = 'https://github.com/openai/codex';
   readOnly = { level: 'enforced' as const };
   models = [
-    { id: 'gpt-5.3-codex', compoundId: 'codex-5.3-high', name: 'GPT-5.3 Codex — high reasoning', recommended: true, extraFlags: ['-c', 'model_reasoning_effort=high'] },
-    { id: 'gpt-5.3-codex', compoundId: 'codex-5.3-xhigh', name: 'GPT-5.3 Codex — xhigh reasoning', extraFlags: ['-c', 'model_reasoning_effort=xhigh'] },
-    { id: 'gpt-5.3-codex', compoundId: 'codex-5.3-medium', name: 'GPT-5.3 Codex — medium reasoning', extraFlags: ['-c', 'model_reasoning_effort=medium'] },
+    {
+      id: 'gpt-5.3-codex',
+      compoundId: 'codex-5.3-high',
+      name: 'GPT-5.3 Codex — high reasoning',
+      recommended: true,
+      extraFlags: ['-c', 'model_reasoning_effort=high'],
+    },
+    {
+      id: 'gpt-5.3-codex',
+      compoundId: 'codex-5.3-xhigh',
+      name: 'GPT-5.3 Codex — xhigh reasoning',
+      extraFlags: ['-c', 'model_reasoning_effort=xhigh'],
+    },
+    {
+      id: 'gpt-5.3-codex',
+      compoundId: 'codex-5.3-medium',
+      name: 'GPT-5.3 Codex — medium reasoning',
+      extraFlags: ['-c', 'model_reasoning_effort=medium'],
+    },
   ];
 
   buildInvocation(req: RunRequest): Invocation {
@@ -21,10 +37,7 @@ export class CodexAdapter extends BaseAdapter {
       args.push('--sandbox', 'read-only');
     }
 
-    args.push(
-      '-c', 'web_search=live',
-      '--skip-git-repo-check',
-    );
+    args.push('-c', 'web_search=live', '--skip-git-repo-check');
 
     // Append any extra flags (e.g. reasoning effort)
     if (req.extraFlags) {

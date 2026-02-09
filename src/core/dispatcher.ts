@@ -1,10 +1,19 @@
-import pLimit from 'p-limit';
 import { join } from 'node:path';
-import { execute, captureAmpUsage, computeAmpCostFromSnapshots } from './executor.js';
-import { safeWriteFile } from './fs-utils.js';
+import pLimit from 'p-limit';
 import { resolveAdapter } from '../adapters/index.js';
-import type { Config, RunRequest, ToolReport, ReadOnlyLevel } from '../types.js';
+import type {
+  Config,
+  ReadOnlyLevel,
+  RunRequest,
+  ToolReport,
+} from '../types.js';
 import { debug, warn } from '../ui/logger.js';
+import {
+  captureAmpUsage,
+  computeAmpCostFromSnapshots,
+  execute,
+} from './executor.js';
+import { safeWriteFile } from './fs-utils.js';
 
 export interface ProgressEvent {
   toolId: string;
@@ -31,12 +40,23 @@ export interface DispatchOptions {
 /**
  * Dispatch prompts to all selected tools in parallel with bounded concurrency.
  */
-export async function dispatch(options: DispatchOptions): Promise<ToolReport[]> {
-  const { config, toolIds, promptFilePath, promptContent, outputDir, readOnlyPolicy, cwd, onProgress } = options;
+export async function dispatch(
+  options: DispatchOptions,
+): Promise<ToolReport[]> {
+  const {
+    config,
+    toolIds,
+    promptFilePath,
+    promptContent,
+    outputDir,
+    readOnlyPolicy,
+    cwd,
+    onProgress,
+  } = options;
   const limit = pLimit(config.defaults.maxParallel);
 
   // Filter tools based on read-only policy
-  const eligibleTools = toolIds.filter(id => {
+  const eligibleTools = toolIds.filter((id) => {
     const toolConfig = config.tools[id];
     if (!toolConfig) {
       warn(`Tool "${id}" not configured, skipping.`);
@@ -46,7 +66,9 @@ export async function dispatch(options: DispatchOptions): Promise<ToolReport[]> 
     if (readOnlyPolicy === 'enforced') {
       const adapter = resolveAdapter(id, toolConfig);
       if (adapter.readOnly.level !== 'enforced') {
-        warn(`Skipping "${id}" — read-only level is "${adapter.readOnly.level}", policy requires "enforced".`);
+        warn(
+          `Skipping "${id}" — read-only level is "${adapter.readOnly.level}", policy requires "enforced".`,
+        );
         return false;
       }
     }
@@ -58,7 +80,7 @@ export async function dispatch(options: DispatchOptions): Promise<ToolReport[]> 
     throw new Error('No eligible tools after read-only policy filtering.');
   }
 
-  const tasks = eligibleTools.map(id =>
+  const tasks = eligibleTools.map((id) =>
     limit(async (): Promise<ToolReport> => {
       const toolConfig = config.tools[id];
       const adapter = resolveAdapter(id, toolConfig);
@@ -92,9 +114,10 @@ export async function dispatch(options: DispatchOptions): Promise<ToolReport[]> 
 
       // Amp cost tracking: capture usage after
       const usageAfter = isAmp ? await captureAmpUsage() : null;
-      const cost = isAmp && usageBefore && usageAfter
-        ? computeAmpCostFromSnapshots(usageBefore, usageAfter)
-        : undefined;
+      const cost =
+        isAmp && usageBefore && usageAfter
+          ? computeAmpCostFromSnapshots(usageBefore, usageAfter)
+          : undefined;
 
       // Write output files
       const safeId = sanitizeId(id);
@@ -114,7 +137,11 @@ export async function dispatch(options: DispatchOptions): Promise<ToolReport[]> 
       const report: ToolReport = {
         toolId: id,
         model,
-        status: result.timedOut ? 'timeout' : result.exitCode === 0 ? 'success' : 'error',
+        status: result.timedOut
+          ? 'timeout'
+          : result.exitCode === 0
+            ? 'success'
+            : 'error',
         exitCode: result.exitCode,
         durationMs: result.durationMs,
         wordCount: result.stdout.split(/\s+/).filter(Boolean).length,

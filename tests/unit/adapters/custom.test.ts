@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { CustomAdapter } from '../../../src/adapters/custom.js';
 import type { RunRequest, ToolConfig } from '../../../src/types.js';
 
@@ -25,7 +25,10 @@ const baseReq: RunRequest = {
 describe('CustomAdapter', () => {
   it('uses resolved binary from req.binary', () => {
     const adapter = new CustomAdapter('my-tool', baseConfig);
-    const inv = adapter.buildInvocation({ ...baseReq, binary: '/resolved/path/my-tool' });
+    const inv = adapter.buildInvocation({
+      ...baseReq,
+      binary: '/resolved/path/my-tool',
+    });
     expect(inv.cmd).toBe('/resolved/path/my-tool');
   });
 
@@ -43,7 +46,10 @@ describe('CustomAdapter', () => {
   });
 
   it('adds exec flags when configured', () => {
-    const config: ToolConfig = { ...baseConfig, execFlags: ['--verbose', '--format=json'] };
+    const config: ToolConfig = {
+      ...baseConfig,
+      execFlags: ['--verbose', '--format=json'],
+    };
     const adapter = new CustomAdapter('my-tool', config);
     const inv = adapter.buildInvocation(baseReq);
     expect(inv.args).toContain('--verbose');
@@ -51,9 +57,15 @@ describe('CustomAdapter', () => {
   });
 
   it('adds read-only flags when policy is not none', () => {
-    const config: ToolConfig = { ...baseConfig, readOnly: { level: 'enforced', flags: ['--ro', '--safe'] } };
+    const config: ToolConfig = {
+      ...baseConfig,
+      readOnly: { level: 'enforced', flags: ['--ro', '--safe'] },
+    };
     const adapter = new CustomAdapter('my-tool', config);
-    const inv = adapter.buildInvocation({ ...baseReq, readOnlyPolicy: 'enforced' });
+    const inv = adapter.buildInvocation({
+      ...baseReq,
+      readOnlyPolicy: 'enforced',
+    });
     expect(inv.args).toContain('--ro');
     expect(inv.args).toContain('--safe');
   });

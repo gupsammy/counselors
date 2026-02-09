@@ -1,9 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { ToolAdapter, ToolConfig } from '../../src/types.js';
 
 // Mock the execute function so executeTest doesn't spawn real processes
 vi.mock('../../src/core/executor.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../src/core/executor.js')>();
+  const actual =
+    await importOriginal<typeof import('../../src/core/executor.js')>();
   return {
     ...actual,
     execute: vi.fn().mockResolvedValue({
@@ -42,7 +43,11 @@ const fakeToolConfig: ToolConfig = {
 
 describe('executeTest', () => {
   it('uses toolName when provided', async () => {
-    const result = await executeTest(fakeAdapter, fakeToolConfig, 'my-custom-name');
+    const result = await executeTest(
+      fakeAdapter,
+      fakeToolConfig,
+      'my-custom-name',
+    );
     expect(result.toolId).toBe('my-custom-name');
   });
 

@@ -1,13 +1,22 @@
-import type { Command } from 'commander';
 import { accessSync, constants } from 'node:fs';
 import { resolve } from 'node:path';
-import { loadConfig, saveConfig, addToolToConfig } from '../../core/config.js';
+import type { Command } from 'commander';
+import {
+  getAdapter,
+  getAllBuiltInAdapters,
+  isBuiltInTool,
+} from '../../adapters/index.js';
+import { addToolToConfig, loadConfig, saveConfig } from '../../core/config.js';
 import { discoverTool, findBinary } from '../../core/discovery.js';
-import { getAdapter, isBuiltInTool, getAllBuiltInAdapters } from '../../adapters/index.js';
-import { selectModel, confirmOverwrite, promptInput, promptSelect } from '../../ui/prompts.js';
+import type { ReadOnlyLevel, ToolConfig } from '../../types.js';
+import { error, info, success, warn } from '../../ui/logger.js';
 import { createSpinner } from '../../ui/output.js';
-import { success, error, info, warn } from '../../ui/logger.js';
-import type { ToolConfig, ReadOnlyLevel } from '../../types.js';
+import {
+  confirmOverwrite,
+  promptInput,
+  promptSelect,
+  selectModel,
+} from '../../ui/prompts.js';
 
 const CUSTOM_TOOL_VALUE = '__custom__';
 
@@ -20,7 +29,12 @@ async function runAddWizard(): Promise<{ toolId: string; isCustom: boolean }> {
   const spinner = createSpinner('Discovering installed tools...').start();
 
   const adapters = getAllBuiltInAdapters();
-  const discovered: { id: string; name: string; found: boolean; version: string | null }[] = [];
+  const discovered: {
+    id: string;
+    name: string;
+    found: boolean;
+    version: string | null;
+  }[] = [];
 
   for (const adapter of adapters) {
     const result = discoverTool(adapter.commands);
@@ -34,7 +48,7 @@ async function runAddWizard(): Promise<{ toolId: string; isCustom: boolean }> {
 
   spinner.stop();
 
-  const choices = discovered.map(d => ({
+  const choices = discovered.map((d) => ({
     name: d.found
       ? `${d.name} (${d.id})${d.version ? ` — ${d.version}` : ''}`
       : `${d.name} (${d.id}) — not installed`,
@@ -48,7 +62,10 @@ async function runAddWizard(): Promise<{ toolId: string; isCustom: boolean }> {
     disabled: undefined,
   });
 
-  const selected = await promptSelect<string>('Which tool would you like to add?', choices as any);
+  const selected = await promptSelect<string>(
+    'Which tool would you like to add?',
+    choices as any,
+  );
 
   if (selected === CUSTOM_TOOL_VALUE) {
     return { toolId: '', isCustom: true };
@@ -78,12 +95,18 @@ function validateBinary(input: string): string | null {
   return null;
 }
 
-async function addBuiltInTool(toolId: string, config: ReturnType<typeof loadConfig>, nameOverride?: string): Promise<void> {
+async function addBuiltInTool(
+  toolId: string,
+  config: ReturnType<typeof loadConfig>,
+  nameOverride?: string,
+): Promise<void> {
   const adapter = getAdapter(toolId);
   const discovery = discoverTool(adapter.commands);
 
   if (!discovery.found) {
-    error(`"${toolId}" binary not found. Install it from: ${adapter.installUrl}`);
+    error(
+      `"${toolId}" binary not found. Install it from: ${adapter.installUrl}`,
+    );
     process.exitCode = 1;
     return;
   }
@@ -113,10 +136,11 @@ async function addBuiltInTool(toolId: string, config: ReturnType<typeof loadConf
   const toolConfig: ToolConfig = {
     binary: discovery.path!,
     defaultModel: model,
-    models: adapter.models.map(m => m.id),
+    models: adapter.models.map((m) => m.id),
     readOnly: { level: adapter.readOnly.level },
     promptMode: toolId === 'amp' ? 'stdin' : 'argument',
-    modelFlag: toolId === 'codex' ? '-m' : toolId === 'gemini' ? '-m' : '--model',
+    modelFlag:
+      toolId === 'codex' ? '-m' : toolId === 'gemini' ? '-m' : '--model',
   };
 
   const updated = addToolToConfig(config, name, toolConfig);
@@ -124,7 +148,10 @@ async function addBuiltInTool(toolId: string, config: ReturnType<typeof loadConf
   success(`Added "${name}" to config.`);
 }
 
-async function collectCustomConfig(config: ReturnType<typeof loadConfig>, presetId?: string): Promise<void> {
+async function collectCustomConfig(
+  config: ReturnType<typeof loadConfig>,
+  presetId?: string,
+): Promise<void> {
   // Get and validate binary
   let binaryPath: string | null = null;
   while (!binaryPath) {
@@ -136,21 +163,31 @@ async function collectCustomConfig(config: ReturnType<typeof loadConfig>, preset
   }
 
   // Prompt mode — ask first so we can guide the rest of the wizard
-  const promptMode = await promptSelect<'argument' | 'stdin'>('How does this tool receive prompts?', [
-    { name: 'Stdin — pipe prompt text to stdin', value: 'stdin' },
-    { name: 'Argument — prompt is passed as a CLI argument', value: 'argument' },
-  ]);
+  const promptMode = await promptSelect<'argument' | 'stdin'>(
+    'How does this tool receive prompts?',
+    [
+      { name: 'Stdin — pipe prompt text to stdin', value: 'stdin' },
+      {
+        name: 'Argument — prompt is passed as a CLI argument',
+        value: 'argument',
+      },
+    ],
+  );
 
   // Collect flags
   info('');
   info('  Counselors runs tools non-interactively. Your flags MUST include:');
-  info('    1. Headless/non-interactive mode (e.g. -p, --non-interactive, --headless)');
+  info(
+    '    1. Headless/non-interactive mode (e.g. -p, --non-interactive, --headless)',
+  );
   info('    2. Model selection if needed (e.g. --model gpt-4o)');
   info('    3. Output format if needed (e.g. --output-format text)');
   info('');
   if (promptMode === 'argument') {
     info('  Counselors will append the prompt as the last CLI argument:');
-    info('    "Read the file at <path> and follow the instructions within it."');
+    info(
+      '    "Read the file at <path> and follow the instructions within it."',
+    );
   } else {
     info('  Counselors will pipe the prompt text to stdin.');
   }
@@ -163,22 +200,39 @@ async function collectCustomConfig(config: ReturnType<typeof loadConfig>, preset
     execFlags = flagsInput.trim().split(/\s+/);
   }
 
-  const readOnlyLevel = await promptSelect<ReadOnlyLevel>('Read-only capability:', [
-    { name: 'Enforced — tool guarantees read-only', value: 'enforced' },
-    { name: 'Best effort — tool tries but may not guarantee', value: 'bestEffort' },
-    { name: 'None — tool has full access', value: 'none' },
-  ]);
+  const readOnlyLevel = await promptSelect<ReadOnlyLevel>(
+    'Read-only capability:',
+    [
+      { name: 'Enforced — tool guarantees read-only', value: 'enforced' },
+      {
+        name: 'Best effort — tool tries but may not guarantee',
+        value: 'bestEffort',
+      },
+      { name: 'None — tool has full access', value: 'none' },
+    ],
+  );
 
   // Get tool ID
-  const defaultId = presetId ?? binaryPath.split('/').pop()?.replace(/\.[^.]+$/, '') ?? 'custom';
-  const toolId = await promptInput('Tool name (used in config and output filenames):', defaultId);
+  const defaultId =
+    presetId ??
+    binaryPath
+      .split('/')
+      .pop()
+      ?.replace(/\.[^.]+$/, '') ??
+    'custom';
+  const toolId = await promptInput(
+    'Tool name (used in config and output filenames):',
+    defaultId,
+  );
 
   // Preview
   info('');
   info('  Tool will be invoked as:');
   const previewArgs = [
     ...(execFlags ?? []),
-    promptMode === 'stdin' ? '< prompt.md' : '"Read the file at <path> and follow the instructions..."',
+    promptMode === 'stdin'
+      ? '< prompt.md'
+      : '"Read the file at <path> and follow the instructions..."',
   ];
   info(`    ${binaryPath} ${previewArgs.join(' ')}`);
   info('');

@@ -1,8 +1,8 @@
 import type { Command } from 'commander';
-import { loadConfig } from '../../core/config.js';
 import { resolveAdapter } from '../../adapters/index.js';
-import { formatToolList } from '../../ui/output.js';
+import { loadConfig } from '../../core/config.js';
 import { info } from '../../ui/logger.js';
+import { formatToolList } from '../../ui/output.js';
 
 export function registerListCommand(program: Command): void {
   program

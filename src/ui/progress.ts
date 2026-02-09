@@ -31,7 +31,11 @@ export class ProgressDisplay {
     this.tools = new Map();
     this.order = [];
     for (const t of tools) {
-      this.tools.set(t.toolId, { toolId: t.toolId, model: t.model, status: 'pending' });
+      this.tools.set(t.toolId, {
+        toolId: t.toolId,
+        model: t.model,
+        status: 'pending',
+      });
       this.order.push(t.toolId);
     }
 
@@ -65,10 +69,19 @@ export class ProgressDisplay {
 
     if (!this.isTTY) {
       const duration = (report.durationMs / 1000).toFixed(1);
-      const icon = report.status === 'success' ? '✓' : report.status === 'timeout' ? '⏱' : '✗';
-      process.stderr.write(`  ${icon} ${toolId} (${tool.model}) done  ${duration}s  ${report.wordCount.toLocaleString()} words\n`);
+      const icon =
+        report.status === 'success'
+          ? '✓'
+          : report.status === 'timeout'
+            ? '⏱'
+            : '✗';
+      process.stderr.write(
+        `  ${icon} ${toolId} (${tool.model}) done  ${duration}s  ${report.wordCount.toLocaleString()} words\n`,
+      );
       if (report.status !== 'success' && report.error) {
-        process.stderr.write(`    └ ${report.error.split('\n')[0].slice(0, 120)}\n`);
+        process.stderr.write(
+          `    └ ${report.error.split('\n')[0].slice(0, 120)}\n`,
+        );
       }
     }
   }
@@ -89,7 +102,11 @@ export class ProgressDisplay {
     for (const id of this.order) {
       const tool = this.tools.get(id)!;
       lines.push(this.formatLine(tool));
-      if (tool.status === 'done' && tool.report?.status !== 'success' && tool.report?.error) {
+      if (
+        tool.status === 'done' &&
+        tool.report?.status !== 'success' &&
+        tool.report?.error
+      ) {
         const msg = tool.report.error.split('\n')[0].slice(0, 120);
         lines.push(`    ${RED}└ ${msg}${RESET}`);
       }
@@ -117,13 +134,16 @@ export class ProgressDisplay {
       }
       case 'running': {
         const spinner = SPINNER_FRAMES[this.frame % SPINNER_FRAMES.length];
-        const elapsed = tool.startedAt ? ((Date.now() - tool.startedAt) / 1000).toFixed(1) : '0.0';
+        const elapsed = tool.startedAt
+          ? ((Date.now() - tool.startedAt) / 1000).toFixed(1)
+          : '0.0';
         const pad = ' '.repeat(Math.max(0, 40 - label.length));
         return `  ${spinner} ${label}${pad}running  ${elapsed.padStart(6)}s`;
       }
       case 'done': {
         const r = tool.report!;
-        const icon = r.status === 'success' ? '✓' : r.status === 'timeout' ? '⏱' : '✗';
+        const icon =
+          r.status === 'success' ? '✓' : r.status === 'timeout' ? '⏱' : '✗';
         const duration = (r.durationMs / 1000).toFixed(1);
         const pad = ' '.repeat(Math.max(0, 40 - label.length));
         return `  ${icon} ${label}${pad}done    ${duration.padStart(6)}s  ${r.wordCount.toLocaleString()} words`;

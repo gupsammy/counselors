@@ -1,7 +1,13 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync, chmodSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { ConfigSchema, type Config, type ToolConfig } from '../types.js';
-import { CONFIG_DIR, CONFIG_FILE, CONFIG_FILE_MODE } from '../constants.js';
+import { CONFIG_FILE, CONFIG_FILE_MODE } from '../constants.js';
+import { type Config, ConfigSchema, type ToolConfig } from '../types.js';
 
 const DEFAULT_CONFIG: Config = {
   version: 1,
@@ -23,7 +29,9 @@ export function loadConfig(globalPath?: string): Config {
   try {
     raw = JSON.parse(readFileSync(path, 'utf-8'));
   } catch (e) {
-    throw new Error(`Invalid JSON in ${path}: ${e instanceof Error ? e.message : e}`);
+    throw new Error(
+      `Invalid JSON in ${path}: ${e instanceof Error ? e.message : e}`,
+    );
   }
   return ConfigSchema.parse(raw);
 }
@@ -39,12 +47,18 @@ export function loadProjectConfig(cwd: string): Partial<Config> | null {
   try {
     raw = JSON.parse(readFileSync(path, 'utf-8'));
   } catch (e) {
-    throw new Error(`Invalid JSON in ${path}: ${e instanceof Error ? e.message : e}`);
+    throw new Error(
+      `Invalid JSON in ${path}: ${e instanceof Error ? e.message : e}`,
+    );
   }
   return ProjectConfigSchema.parse(raw);
 }
 
-export function mergeConfigs(global: Config, project: Partial<Config> | null, cliFlags?: Partial<Config['defaults']>): Config {
+export function mergeConfigs(
+  global: Config,
+  project: Partial<Config> | null,
+  cliFlags?: Partial<Config['defaults']>,
+): Config {
   const merged: Config = {
     version: 1,
     defaults: { ...global.defaults },
@@ -68,11 +82,15 @@ export function mergeConfigs(global: Config, project: Partial<Config> | null, cl
 export function saveConfig(config: Config, path?: string): void {
   const filePath = path ?? CONFIG_FILE;
   mkdirSync(dirname(filePath), { recursive: true });
-  writeFileSync(filePath, JSON.stringify(config, null, 2) + '\n', 'utf-8');
+  writeFileSync(filePath, `${JSON.stringify(config, null, 2)}\n`, 'utf-8');
   chmodSync(filePath, CONFIG_FILE_MODE);
 }
 
-export function addToolToConfig(config: Config, id: string, tool: ToolConfig): Config {
+export function addToolToConfig(
+  config: Config,
+  id: string,
+  tool: ToolConfig,
+): Config {
   return {
     ...config,
     tools: { ...config.tools, [id]: tool },
@@ -85,7 +103,11 @@ export function removeToolFromConfig(config: Config, id: string): Config {
   return { ...config, tools };
 }
 
-export function renameToolInConfig(config: Config, oldId: string, newId: string): Config {
+export function renameToolInConfig(
+  config: Config,
+  oldId: string,
+  newId: string,
+): Config {
   const tools = { ...config.tools };
   tools[newId] = tools[oldId];
   delete tools[oldId];

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ToolReport } from '../../src/types.js';
 
 // Capture stderr writes
@@ -8,7 +8,10 @@ const originalWrite = process.stderr.write;
 beforeEach(() => {
   stderrOutput = '';
   // Force non-TTY so we get simple line output (no ANSI cursor movement)
-  Object.defineProperty(process.stderr, 'isTTY', { value: false, configurable: true });
+  Object.defineProperty(process.stderr, 'isTTY', {
+    value: false,
+    configurable: true,
+  });
   process.stderr.write = vi.fn((chunk: any) => {
     stderrOutput += typeof chunk === 'string' ? chunk : chunk.toString();
     return true;
@@ -17,7 +20,10 @@ beforeEach(() => {
 
 afterEach(() => {
   process.stderr.write = originalWrite;
-  Object.defineProperty(process.stderr, 'isTTY', { value: originalWrite ? true : undefined, configurable: true });
+  Object.defineProperty(process.stderr, 'isTTY', {
+    value: originalWrite ? true : undefined,
+    configurable: true,
+  });
 });
 
 // Dynamic import to pick up the mocked isTTY
@@ -70,7 +76,15 @@ describe('ProgressDisplay (non-TTY)', () => {
       '/tmp/output',
     );
     display.start('claude');
-    display.complete('claude', makeReport({ toolId: 'claude', model: 'opus', durationMs: 12300, wordCount: 500 }));
+    display.complete(
+      'claude',
+      makeReport({
+        toolId: 'claude',
+        model: 'opus',
+        durationMs: 12300,
+        wordCount: 500,
+      }),
+    );
     display.stop();
     expect(stderrOutput).toContain('✓ claude (opus) done');
     expect(stderrOutput).toContain('12.3s');
@@ -84,13 +98,16 @@ describe('ProgressDisplay (non-TTY)', () => {
       '/tmp/output',
     );
     display.start('gemini');
-    display.complete('gemini', makeReport({
-      toolId: 'gemini',
-      model: 'pro',
-      status: 'error',
-      exitCode: 1,
-      error: 'TypeError: Cannot read properties\nsome second line',
-    }));
+    display.complete(
+      'gemini',
+      makeReport({
+        toolId: 'gemini',
+        model: 'pro',
+        status: 'error',
+        exitCode: 1,
+        error: 'TypeError: Cannot read properties\nsome second line',
+      }),
+    );
     display.stop();
     expect(stderrOutput).toContain('✗ gemini (pro) done');
     expect(stderrOutput).toContain('└ TypeError: Cannot read properties');
@@ -105,7 +122,10 @@ describe('ProgressDisplay (non-TTY)', () => {
       '/tmp/output',
     );
     display.start('slow');
-    display.complete('slow', makeReport({ toolId: 'slow', model: 'big', status: 'timeout' }));
+    display.complete(
+      'slow',
+      makeReport({ toolId: 'slow', model: 'big', status: 'timeout' }),
+    );
     display.stop();
     expect(stderrOutput).toContain('⏱ slow (big) done');
   });

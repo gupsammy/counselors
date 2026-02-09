@@ -1,9 +1,16 @@
-import { spawn, execFile, type ChildProcess } from 'node:child_process';
+import { type ChildProcess, execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import stripAnsi from 'strip-ansi';
-import type { Invocation, ExecResult, ToolAdapter, ToolConfig, TestResult, CostInfo } from '../types.js';
+import { computeAmpCost, parseAmpUsage } from '../adapters/amp.js';
 import { KILL_GRACE_PERIOD, TEST_TIMEOUT } from '../constants.js';
-import { parseAmpUsage, computeAmpCost } from '../adapters/amp.js';
+import type {
+  CostInfo,
+  ExecResult,
+  Invocation,
+  TestResult,
+  ToolAdapter,
+  ToolConfig,
+} from '../types.js';
 import { debug } from '../ui/logger.js';
 
 const execFileAsync = promisify(execFile);
@@ -21,8 +28,15 @@ process.on('SIGINT', () => {
 });
 
 const ENV_ALLOWLIST = [
-  'PATH', 'HOME', 'USER', 'TERM', 'LANG', 'SHELL', 'TMPDIR',
-  'XDG_CONFIG_HOME', 'XDG_DATA_HOME',
+  'PATH',
+  'HOME',
+  'USER',
+  'TERM',
+  'LANG',
+  'SHELL',
+  'TMPDIR',
+  'XDG_CONFIG_HOME',
+  'XDG_DATA_HOME',
 ] as const;
 
 function buildSafeEnv(extra?: Record<string, string>): Record<string, string> {
@@ -31,8 +45,8 @@ function buildSafeEnv(extra?: Record<string, string>): Record<string, string> {
     if (process.env[key]) env[key] = process.env[key]!;
   }
   if (extra) Object.assign(env, extra);
-  env['CI'] = 'true';
-  env['NO_COLOR'] = '1';
+  env.CI = 'true';
+  env.NO_COLOR = '1';
   return env;
 }
 
@@ -40,7 +54,10 @@ function buildSafeEnv(extra?: Record<string, string>): Record<string, string> {
  * Execute a tool invocation with timeout and output capture.
  * Uses child_process.spawn — no shell: true (security).
  */
-export function execute(invocation: Invocation, timeoutMs: number): Promise<ExecResult> {
+export function execute(
+  invocation: Invocation,
+  timeoutMs: number,
+): Promise<ExecResult> {
   return new Promise((resolve) => {
     const start = Date.now();
     let stdout = '';
@@ -66,7 +83,7 @@ export function execute(invocation: Invocation, timeoutMs: number): Promise<Exec
         stdout += data.toString();
         if (stdout.length >= MAX_OUTPUT_BYTES) {
           truncated = true;
-          stdout = stdout.slice(0, MAX_OUTPUT_BYTES) + '\n[output truncated at 10MB]';
+          stdout = `${stdout.slice(0, MAX_OUTPUT_BYTES)}\n[output truncated at 10MB]`;
         }
       }
     });
@@ -144,7 +161,10 @@ export async function captureAmpUsage(): Promise<string | null> {
 /**
  * Compute amp cost from before/after usage snapshots.
  */
-export function computeAmpCostFromSnapshots(before: string, after: string): CostInfo | null {
+export function computeAmpCostFromSnapshots(
+  before: string,
+  after: string,
+): CostInfo | null {
   try {
     const beforeParsed = parseAmpUsage(before);
     const afterParsed = parseAmpUsage(after);
@@ -157,7 +177,11 @@ export function computeAmpCostFromSnapshots(before: string, after: string): Cost
 /**
  * Test a tool using the "reply OK" protocol.
  */
-export async function executeTest(adapter: ToolAdapter, toolConfig: ToolConfig, toolName?: string): Promise<TestResult> {
+export async function executeTest(
+  adapter: ToolAdapter,
+  toolConfig: ToolConfig,
+  toolName?: string,
+): Promise<TestResult> {
   const prompt = 'Reply with exactly: OK';
   const start = Date.now();
 
@@ -194,7 +218,9 @@ export async function executeTest(adapter: ToolAdapter, toolConfig: ToolConfig, 
     toolId: toolName ?? adapter.id,
     passed,
     output: result.stdout.slice(0, 500),
-    error: !passed ? (result.stderr.slice(0, 500) || 'Output did not contain "OK"') : undefined,
+    error: !passed
+      ? result.stderr.slice(0, 500) || 'Output did not contain "OK"'
+      : undefined,
     durationMs: Date.now() - start,
   };
 }

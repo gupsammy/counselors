@@ -7,7 +7,11 @@ import { debug } from '../ui/logger.js';
 /**
  * Gather context from git diff and specified files.
  */
-export function gatherContext(cwd: string, paths: string[], maxKb: number = DEFAULT_MAX_CONTEXT_KB): string {
+export function gatherContext(
+  cwd: string,
+  paths: string[],
+  maxKb: number = DEFAULT_MAX_CONTEXT_KB,
+): string {
   const parts: string[] = [];
   let totalBytes = 0;
   const maxBytes = maxKb * 1024;
@@ -46,12 +50,26 @@ export function gatherContext(cwd: string, paths: string[], maxKb: number = DEFA
     if (diff) {
       const diffBytes = Buffer.byteLength(diff);
       if (totalBytes + diffBytes <= maxBytes) {
-        parts.push('### Recent Changes (Git Diff)', '', '```diff', diff, '```', '');
+        parts.push(
+          '### Recent Changes (Git Diff)',
+          '',
+          '```diff',
+          diff,
+          '```',
+          '',
+        );
         totalBytes += diffBytes;
       } else {
         const remaining = maxBytes - totalBytes;
         const truncated = diff.slice(0, remaining);
-        parts.push('### Recent Changes (Git Diff) [truncated]', '', '```diff', truncated, '```', '');
+        parts.push(
+          '### Recent Changes (Git Diff) [truncated]',
+          '',
+          '```diff',
+          truncated,
+          '```',
+          '',
+        );
         totalBytes = maxBytes;
       }
     }

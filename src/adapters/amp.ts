@@ -1,7 +1,13 @@
-import { BaseAdapter } from './base.js';
-import type { RunRequest, Invocation, ExecResult, ToolReport, CostInfo } from '../types.js';
-import { AMP_SETTINGS_FILE } from '../constants.js';
 import { existsSync } from 'node:fs';
+import { AMP_SETTINGS_FILE } from '../constants.js';
+import type {
+  CostInfo,
+  ExecResult,
+  Invocation,
+  RunRequest,
+  ToolReport,
+} from '../types.js';
+import { BaseAdapter } from './base.js';
 
 export class AmpAdapter extends BaseAdapter {
   id = 'amp';
@@ -23,10 +29,16 @@ export class AmpAdapter extends BaseAdapter {
 
     // Amp uses stdin for prompt delivery
     // Append oracle instruction like the existing skill does
-    const stdinContent = req.prompt +
+    const stdinContent =
+      req.prompt +
       '\n\nUse the oracle tool to provide deeper reasoning and analysis on the most complex or critical aspects of this review.';
 
-    return { cmd: req.binary ?? 'amp', args, stdin: stdinContent, cwd: req.cwd };
+    return {
+      cmd: req.binary ?? 'amp',
+      args,
+      stdin: stdinContent,
+      cwd: req.cwd,
+    };
   }
 
   parseResult(result: ExecResult): Partial<ToolReport> {
@@ -39,7 +51,11 @@ export class AmpAdapter extends BaseAdapter {
 /**
  * Parse `amp usage` output to extract balance information.
  */
-export function parseAmpUsage(output: string): { freeRemaining: number; freeTotal: number; creditsRemaining: number } {
+export function parseAmpUsage(output: string): {
+  freeRemaining: number;
+  freeTotal: number;
+  creditsRemaining: number;
+} {
   const freeMatch = output.match(/Amp Free: \$([0-9.]+)\/\$([0-9.]+)/);
   const creditsMatch = output.match(/Individual credits: \$([0-9.]+)/);
 
@@ -54,11 +70,18 @@ export function parseAmpUsage(output: string): { freeRemaining: number; freeTota
  * Compute cost from before/after usage snapshots.
  */
 export function computeAmpCost(
-  before: { freeRemaining: number; freeTotal: number; creditsRemaining: number },
+  before: {
+    freeRemaining: number;
+    freeTotal: number;
+    creditsRemaining: number;
+  },
   after: { freeRemaining: number; freeTotal: number; creditsRemaining: number },
 ): CostInfo {
   const freeUsed = Math.max(0, before.freeRemaining - after.freeRemaining);
-  const creditsUsed = Math.max(0, before.creditsRemaining - after.creditsRemaining);
+  const creditsUsed = Math.max(
+    0,
+    before.creditsRemaining - after.creditsRemaining,
+  );
   const totalCost = freeUsed + creditsUsed;
   const source = creditsUsed > 0 ? 'credits' : 'free';
 

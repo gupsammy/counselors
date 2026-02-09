@@ -1,4 +1,4 @@
-import { writeFileSync, renameSync, unlinkSync } from 'node:fs';
+import { renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { warn } from '../ui/logger.js';
 
 /**
@@ -12,7 +12,11 @@ export function safeWriteFile(path: string, content: string): void {
     renameSync(tmp, path);
   } catch (e) {
     // Clean up temp file on failure
-    try { unlinkSync(tmp); } catch { /* ignore */ }
+    try {
+      unlinkSync(tmp);
+    } catch {
+      /* ignore */
+    }
     warn(`Failed to write ${path}: ${e}`);
   }
 }

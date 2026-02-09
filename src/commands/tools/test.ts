@@ -1,10 +1,10 @@
 import type { Command } from 'commander';
-import { loadConfig } from '../../core/config.js';
 import { getAdapter, isBuiltInTool } from '../../adapters/index.js';
+import { loadConfig } from '../../core/config.js';
 import { executeTest } from '../../core/executor.js';
-import { formatTestResults, createSpinner } from '../../ui/output.js';
-import { info, error } from '../../ui/logger.js';
 import type { TestResult } from '../../types.js';
+import { error, info } from '../../ui/logger.js';
+import { createSpinner, formatTestResults } from '../../ui/output.js';
 
 export function registerTestCommand(program: Command): void {
   program
@@ -13,9 +13,8 @@ export function registerTestCommand(program: Command): void {
     .action(async (toolIds: string[]) => {
       const config = loadConfig();
 
-      const idsToTest = toolIds.length > 0
-        ? toolIds
-        : Object.keys(config.tools);
+      const idsToTest =
+        toolIds.length > 0 ? toolIds : Object.keys(config.tools);
 
       if (idsToTest.length === 0) {
         error('No tools configured. Run "counselors init" first.');
@@ -28,12 +27,20 @@ export function registerTestCommand(program: Command): void {
       for (const id of idsToTest) {
         const toolConfig = config.tools[id];
         if (!toolConfig) {
-          results.push({ toolId: id, passed: false, output: '', error: 'Not configured', durationMs: 0 });
+          results.push({
+            toolId: id,
+            passed: false,
+            output: '',
+            error: 'Not configured',
+            durationMs: 0,
+          });
           continue;
         }
 
         const spinner = createSpinner(`Testing ${id}...`).start();
-        const adapter = isBuiltInTool(id) ? getAdapter(id) : getAdapter(id, toolConfig);
+        const adapter = isBuiltInTool(id)
+          ? getAdapter(id)
+          : getAdapter(id, toolConfig);
         const result = await executeTest(adapter, toolConfig, id);
         spinner.stop();
 
@@ -42,7 +49,7 @@ export function registerTestCommand(program: Command): void {
 
       info(formatTestResults(results));
 
-      if (results.some(r => !r.passed)) {
+      if (results.some((r) => !r.passed)) {
         process.exitCode = 1;
       }
     });

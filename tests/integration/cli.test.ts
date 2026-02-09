@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll } from 'vitest';
 import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
+import { describe, expect, it } from 'vitest';
 
 const CLI = resolve(import.meta.dirname, '../../dist/cli.js');
 
@@ -13,7 +13,7 @@ function run(args: string, options?: { env?: Record<string, string> }): string {
       stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
   } catch (e: any) {
-    return (e.stdout || '').trim() + '\n' + (e.stderr || '').trim();
+    return `${(e.stdout || '').trim()}\n${(e.stderr || '').trim()}`;
   }
 }
 

@@ -1,5 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { AmpAdapter, parseAmpUsage, computeAmpCost } from '../../../src/adapters/amp.js';
+import { describe, expect, it } from 'vitest';
+import {
+  AmpAdapter,
+  computeAmpCost,
+  parseAmpUsage,
+} from '../../../src/adapters/amp.js';
 import type { RunRequest } from '../../../src/types.js';
 
 describe('AmpAdapter', () => {
@@ -67,8 +71,8 @@ Usage for your account:
 
 describe('computeAmpCost', () => {
   it('computes cost from before/after snapshots', () => {
-    const before = { freeRemaining: 5.00, freeTotal: 10, creditsRemaining: 25 };
-    const after = { freeRemaining: 4.50, freeTotal: 10, creditsRemaining: 25 };
+    const before = { freeRemaining: 5.0, freeTotal: 10, creditsRemaining: 25 };
+    const after = { freeRemaining: 4.5, freeTotal: 10, creditsRemaining: 25 };
     const cost = computeAmpCost(before, after);
     expect(cost.cost_usd).toBe(0.5);
     expect(cost.free_used_usd).toBe(0.5);

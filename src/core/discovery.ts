@@ -1,8 +1,19 @@
 import { execFileSync } from 'node:child_process';
-import { accessSync, constants, readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import {
+  accessSync,
+  constants,
+  existsSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+} from 'node:fs';
 import { homedir } from 'node:os';
-import { getExtendedSearchPaths, DISCOVERY_TIMEOUT, VERSION_TIMEOUT } from '../constants.js';
+import { join } from 'node:path';
+import {
+  DISCOVERY_TIMEOUT,
+  getExtendedSearchPaths,
+  VERSION_TIMEOUT,
+} from '../constants.js';
 import type { DiscoveryResult } from '../types.js';
 
 /**
@@ -70,7 +81,7 @@ function getNvmPaths(): string[] {
     if (!existsSync(versionsDir)) return [];
 
     const versions = readdirSync(versionsDir);
-    const match = versions.find(v => v.startsWith(`v${alias}`));
+    const match = versions.find((v) => v.startsWith(`v${alias}`));
     if (match) {
       return [join(versionsDir, match, 'bin')];
     }
@@ -109,7 +120,7 @@ function getFnmPaths(): string[] {
 
   try {
     const entries = readdirSync(multishellDir)
-      .map(name => {
+      .map((name) => {
         const full = join(multishellDir, name);
         try {
           return { name: full, mtime: statSync(full).mtimeMs };
@@ -155,7 +166,9 @@ export function getBinaryVersion(binaryPath: string): string | null {
 /**
  * Discover a single tool.
  */
-export function discoverTool(commands: string[]): DiscoveryResult & { command: string } {
+export function discoverTool(
+  commands: string[],
+): DiscoveryResult & { command: string } {
   for (const cmd of commands) {
     const path = findBinary(cmd);
     if (path) {
@@ -163,5 +176,11 @@ export function discoverTool(commands: string[]): DiscoveryResult & { command: s
       return { toolId: cmd, found: true, path, version, command: cmd };
     }
   }
-  return { toolId: commands[0], found: false, path: null, version: null, command: commands[0] };
+  return {
+    toolId: commands[0],
+    found: false,
+    path: null,
+    version: null,
+    command: commands[0],
+  };
 }

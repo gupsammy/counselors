@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { CodexAdapter } from '../../../src/adapters/codex.js';
 import type { RunRequest } from '../../../src/types.js';
 
@@ -53,28 +53,42 @@ describe('CodexAdapter', () => {
   });
 
   it('includes extraFlags in invocation', () => {
-    const req = { ...baseRequest, extraFlags: ['-c', 'model_reasoning_effort=xhigh'] };
+    const req = {
+      ...baseRequest,
+      extraFlags: ['-c', 'model_reasoning_effort=xhigh'],
+    };
     const inv = adapter.buildInvocation(req);
     expect(inv.args).toContain('model_reasoning_effort=xhigh');
   });
 
   it('omits extraFlags when not provided', () => {
     const inv = adapter.buildInvocation(baseRequest);
-    expect(inv.args.filter(a => a.includes('reasoning_effort'))).toHaveLength(0);
+    expect(inv.args.filter((a) => a.includes('reasoning_effort'))).toHaveLength(
+      0,
+    );
   });
 
   it('places extraFlags before the instruction', () => {
-    const req = { ...baseRequest, extraFlags: ['-c', 'model_reasoning_effort=high'] };
+    const req = {
+      ...baseRequest,
+      extraFlags: ['-c', 'model_reasoning_effort=high'],
+    };
     const inv = adapter.buildInvocation(req);
     const effortIdx = inv.args.indexOf('model_reasoning_effort=high');
-    const instructionIdx = inv.args.findIndex(a => a.startsWith('Read the file'));
+    const instructionIdx = inv.args.findIndex((a) =>
+      a.startsWith('Read the file'),
+    );
     expect(effortIdx).toBeLessThan(instructionIdx);
   });
 
   it('has three gpt-5.3-codex models with different reasoning efforts', () => {
     expect(adapter.models).toHaveLength(3);
-    expect(adapter.models.map(m => m.compoundId)).toEqual(['codex-5.3-high', 'codex-5.3-xhigh', 'codex-5.3-medium']);
-    expect(adapter.models.every(m => m.id === 'gpt-5.3-codex')).toBe(true);
+    expect(adapter.models.map((m) => m.compoundId)).toEqual([
+      'codex-5.3-high',
+      'codex-5.3-xhigh',
+      'codex-5.3-medium',
+    ]);
+    expect(adapter.models.every((m) => m.id === 'gpt-5.3-codex')).toBe(true);
   });
 
   it('only marks the first model as recommended', () => {
@@ -84,8 +98,14 @@ describe('CodexAdapter', () => {
   });
 
   it('each model has correct extraFlags for its reasoning effort', () => {
-    expect(adapter.models[0].extraFlags).toContain('model_reasoning_effort=high');
-    expect(adapter.models[1].extraFlags).toContain('model_reasoning_effort=xhigh');
-    expect(adapter.models[2].extraFlags).toContain('model_reasoning_effort=medium');
+    expect(adapter.models[0].extraFlags).toContain(
+      'model_reasoning_effort=high',
+    );
+    expect(adapter.models[1].extraFlags).toContain(
+      'model_reasoning_effort=xhigh',
+    );
+    expect(adapter.models[2].extraFlags).toContain(
+      'model_reasoning_effort=medium',
+    );
   });
 });

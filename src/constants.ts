@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 // ── XDG config ──
 
-const xdgConfig = process.env['XDG_CONFIG_HOME'] || join(homedir(), '.config');
+const xdgConfig = process.env.XDG_CONFIG_HOME || join(homedir(), '.config');
 export const CONFIG_DIR = join(xdgConfig, 'counselors');
 export const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
 export const AMP_SETTINGS_FILE = join(CONFIG_DIR, 'amp-readonly-settings.json');
@@ -42,11 +42,11 @@ export function getExtendedSearchPaths(): string[] {
   ];
 
   // NVM
-  const nvmBin = process.env['NVM_BIN'];
+  const nvmBin = process.env.NVM_BIN;
   if (nvmBin) paths.push(nvmBin);
 
   // FNM
-  const fnmMultishell = process.env['FNM_MULTISHELL_PATH'];
+  const fnmMultishell = process.env.FNM_MULTISHELL_PATH;
   if (fnmMultishell) paths.push(join(fnmMultishell, 'bin'));
 
   return paths;

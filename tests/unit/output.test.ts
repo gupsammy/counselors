@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { formatToolList } from '../../src/ui/output.js';
 
 describe('formatToolList', () => {
@@ -13,7 +13,10 @@ describe('formatToolList', () => {
   });
 
   it('hides hint in verbose mode', () => {
-    const toolsWithArgs = tools.map(t => ({ ...t, args: ['--model', 'test'] }));
+    const toolsWithArgs = tools.map((t) => ({
+      ...t,
+      args: ['--model', 'test'],
+    }));
     const output = formatToolList(toolsWithArgs, true);
     expect(output).not.toContain('Use -v to show flags');
   });

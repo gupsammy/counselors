@@ -1,6 +1,10 @@
 import type { Command } from 'commander';
-import { loadConfig, saveConfig, renameToolInConfig } from '../../core/config.js';
-import { success, error } from '../../ui/logger.js';
+import {
+  loadConfig,
+  renameToolInConfig,
+  saveConfig,
+} from '../../core/config.js';
+import { error, success } from '../../ui/logger.js';
 
 const SAFE_ID_RE = /^[a-zA-Z0-9._-]+$/;
 
@@ -24,7 +28,9 @@ export function registerRenameCommand(program: Command): void {
       }
 
       if (!SAFE_ID_RE.test(newId)) {
-        error(`Invalid tool name "${newId}". Use only letters, numbers, dots, hyphens, and underscores.`);
+        error(
+          `Invalid tool name "${newId}". Use only letters, numbers, dots, hyphens, and underscores.`,
+        );
         process.exitCode = 1;
         return;
       }

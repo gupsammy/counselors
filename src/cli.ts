@@ -1,14 +1,14 @@
 import { Command } from 'commander';
-import { registerRunCommand } from './commands/run.js';
+import { registerAgentCommand } from './commands/agent.js';
 import { registerDoctorCommand } from './commands/doctor.js';
 import { registerInitCommand } from './commands/init.js';
-import { registerAgentCommand } from './commands/agent.js';
+import { registerRunCommand } from './commands/run.js';
 import { registerSkillCommand } from './commands/skill.js';
-import { registerDiscoverCommand } from './commands/tools/discover.js';
 import { registerAddCommand } from './commands/tools/add.js';
+import { registerDiscoverCommand } from './commands/tools/discover.js';
+import { registerListCommand } from './commands/tools/list.js';
 import { registerRemoveCommand } from './commands/tools/remove.js';
 import { registerRenameCommand } from './commands/tools/rename.js';
-import { registerListCommand } from './commands/tools/list.js';
 import { registerTestCommand } from './commands/tools/test.js';
 
 const program = new Command();

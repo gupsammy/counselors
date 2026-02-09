@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { gatherContext } from '../../src/core/context.js';
 
 const testDir = join(tmpdir(), `counselors-ctx-test-${Date.now()}`);

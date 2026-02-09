@@ -1,8 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdirSync, rmSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { generateSlug, generateSlugFromFile, resolveOutputDir, buildPrompt } from '../../src/core/prompt-builder.js';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  buildPrompt,
+  generateSlug,
+  generateSlugFromFile,
+  resolveOutputDir,
+} from '../../src/core/prompt-builder.js';
 
 const testDir = join(tmpdir(), `counselors-pb-test-${Date.now()}`);
 
@@ -16,15 +21,20 @@ afterEach(() => {
 
 describe('generateSlug', () => {
   it('converts text to slug', () => {
-    expect(generateSlug('should we use Redis for caching')).toBe('should-we-use-redis-for-caching');
+    expect(generateSlug('should we use Redis for caching')).toBe(
+      'should-we-use-redis-for-caching',
+    );
   });
 
   it('strips special characters', () => {
-    expect(generateSlug('What are the tradeoffs?')).toBe('what-are-the-tradeoffs');
+    expect(generateSlug('What are the tradeoffs?')).toBe(
+      'what-are-the-tradeoffs',
+    );
   });
 
   it('truncates to max length', () => {
-    const long = 'this is a very long prompt that should be truncated to forty characters';
+    const long =
+      'this is a very long prompt that should be truncated to forty characters';
     const slug = generateSlug(long);
     expect(slug.length).toBeLessThanOrEqual(40);
   });
@@ -40,7 +50,9 @@ describe('generateSlug', () => {
 
 describe('generateSlugFromFile', () => {
   it('uses parent directory name', () => {
-    expect(generateSlugFromFile('/path/to/redis-review/prompt.md')).toBe('redis-review');
+    expect(generateSlugFromFile('/path/to/redis-review/prompt.md')).toBe(
+      'redis-review',
+    );
   });
 
   it('falls back to filename when parent is dot', () => {
