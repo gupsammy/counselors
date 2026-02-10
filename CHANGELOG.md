@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `agent` command clarifies that `counselors skill` prints a reference template to adapt, not a file to blindly copy
+
+### Fixed
+- Skill install path in `agent` command now points to `~/.claude/skills/` instead of `~/.claude/commands/`
+
 ## [0.3.0] - 2026-02-10
 
 ### Added
