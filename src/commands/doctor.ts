@@ -96,15 +96,23 @@ export function registerDoctorCommand(program: Command): void {
 
         // Read-only capability
         const adapter = resolveAdapter(id, toolConfig);
+        let readOnlyLevel = adapter.readOnly.level;
+
+        // Amp deep mode uses Bash (a write-capable tool), so it's bestEffort
+        const adapterName = toolConfig.adapter ?? id;
+        const isAmpDeep =
+          adapterName === 'amp' &&
+          toolConfig.extraFlags?.includes('deep') &&
+          toolConfig.extraFlags?.[toolConfig.extraFlags.indexOf('deep') - 1] ===
+            '-m';
+        if (isAmpDeep) {
+          readOnlyLevel = 'bestEffort';
+        }
+
         checks.push({
           name: `${id}: read-only`,
-          status:
-            adapter.readOnly.level === 'enforced'
-              ? 'pass'
-              : adapter.readOnly.level === 'bestEffort'
-                ? 'warn'
-                : 'fail',
-          message: adapter.readOnly.level,
+          status: readOnlyLevel === 'none' ? 'warn' : 'pass',
+          message: readOnlyLevel,
         });
       }
 
