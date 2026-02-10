@@ -188,6 +188,74 @@ counselors agent
 
 The skill template provides a multi-phase workflow: gather context, select agents, assemble prompt, dispatch via `counselors run`, read results, and synthesize a combined answer.
 
+## How is this different from...?
+
+Most parallel-agent tools ([Uzi](https://github.com/devflowinc/uzi), [FleetCode](https://github.com/built-by-as/FleetCode), [AI Fleet](https://github.com/nachoal/ai-fleet), [Superset](https://superset.sh)) are designed to parallelize _different tasks_ — each agent gets its own git worktree and works on a separate problem. They're throughput tools.
+
+Counselors does something different: it sends the _same prompt_ to multiple agents and collects their independent perspectives. It's a "council of advisors" pattern — you're not splitting work, you're getting second opinions.
+
+Other differences:
+
+- **No git worktrees, no containers, no infrastructure.** Counselors just calls your locally installed CLIs and writes markdown files.
+- **Read-only by default.** Agents are sandboxed to read-only mode so they can review your code without modifying it.
+- **Built for agentic use.** The slash-command workflow lets your primary agent orchestrate the whole process — gather context, fan out, and synthesize — without you leaving your editor.
+
+## Examples
+
+The real value shows up when models disagree. Here are cross-model disagreement tables from actual counselors runs, synthesized by the primary agent:
+
+**Tauri close-request handling** — _Claude Opus, Gemini Pro, Codex_
+
+| Topic | Claude Opus | Gemini Pro | Codex |
+|-------|-------------|------------|-------|
+| CloseRequested API | Says `set_prevent_default(true)` is correct for Tauri 2.x | Agrees plan is correct | Says plan is wrong — claims `api.prevent_close()` is needed |
+| `emit_to` reliability | Flags potential Tauri bug (#10182) where `emit_to` may broadcast anyway; wants fallback plan | Says raw `app.emit_to` may be needed if tauri-specta doesn't expose it | Says `emit_to` is correct |
+| "Stop All" semantics | Says keep it global (app-level menu = all processes) | No comment | Says command palette "stop all" is not ownership-aware |
+
+**Escape key / modal stacking** — _Codex, Gemini, Amp_
+
+| Approach | Codex | Gemini | Amp |
+|----------|-------|--------|-----|
+| Stack location | Parallel `modalStack: string[]` alongside `openModals: Set` | Replace `openModals: Set` → `openModals: string[]` | Separate `escapeStack` + `escapeHandlers` alongside `openModals: Set` |
+| ESC dispatch | Each Modal keeps its own window listener but no-ops if not topmost | Same as Codex | One global dispatcher + handler registry; Modals don't add window listeners at all |
+| Complexity | Medium (add stack, check in Modal) | Low (swap Set→Array, check in Modal) | Higher (new escape stack, new hooks, new global dispatcher, store handler functions) |
+
+**Terminal drag-and-drop / image paste** — _Claude Opus, Gemini Pro, Codex_
+
+All 4 agents agreed on these key points:
+
+1. Drag-and-drop should insert shell-escaped file paths — this is the universal convention (Terminal.app, iTerm2, Kitty, Ghostty native all do it). Highest value, lowest effort. Do it first.
+2. Image paste should save to a temp file and insert the path — no terminal pastes raw image data. Show a toast to explain what happened.
+3. Do NOT build inline image rendering now — ghostty-web's Canvas renderer has no image rendering capability. Building an HTML overlay compositor would be 40-80 hours of work for low value in a dev tool.
+4. ghostty-web does NOT support image display despite native Ghostty supporting Kitty Graphics Protocol. The web/WASM build lacks the Metal/OpenGL rendering paths needed.
+
+| Topic | Claude Opus | Gemini Pro |
+|-------|-------------|------------|
+| Kitty rendering | "ghostty-web does NOT render images" | Suggests "rely on ghostty-web's built-in Kitty support" |
+
+The synthesizing agent's assessment: Claude Opus and Codex are correct — ghostty-web's CanvasRenderer draws text cells only. Gemini appears to conflate native Ghostty (which does support Kitty graphics) with ghostty-web (which doesn't have rendering paths for it).
+
+**Rust detection module refactor** — _Claude, Gemini, Codex_
+
+All 3 agents agreed:
+
+1. Split into `detection/` module directory — 1200-line file is the most immediate problem
+2. Replace `DetectionContext` boolean fields with a lazy/cached `file_exists()`
+3. The Laravel pattern (`LaravelPackages` sub-struct) is superior to Node.js's inline booleans
+4. Don't build a full rule engine/DSL — conditional logic varies too much
+
+Codex also found 2 bugs all agents acknowledged: dedup by name drops valid suggestions in polyglot repos, and Procfile orchestration skip is too broad.
+
+**ghostty-web 0.3.0 to 0.4.0 upgrade** — _Claude, Codex, Gemini_
+
+| Question | Consensus |
+|----------|-----------|
+| `getLine()` bug fixed? | All agree: likely fixed — old broken WASM export completely removed |
+| DSR response coordination | All agree: strip CPR/DA from backend, keep kitty-only |
+| `patchInputHandler` | All agree: must add `isComposing` guard — CJK/IME will break without it |
+| Phase ordering | All agree: keep phases 4 and 5 separate, add a Phase 0 for compat checker |
+| `renderer.metrics` hack | All agree: high to extremely high risk of breakage in 0.4.0 |
+
 ## Security
 
 - **Environment allowlisting**: Child processes only receive allowlisted environment variables (PATH, HOME, API keys, proxy settings, etc.) — no full `process.env` leak.
