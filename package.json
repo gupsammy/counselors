@@ -37,5 +37,22 @@
     "dist",
     "assets"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "author": "Aaron Francis",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aarondfrancis/counselors.git"
+  },
+  "homepage": "https://github.com/aarondfrancis/counselors",
+  "keywords": [
+    "ai",
+    "coding-agents",
+    "claude",
+    "codex",
+    "gemini",
+    "amp",
+    "parallel",
+    "multi-agent",
+    "cli"
+  ]
 }

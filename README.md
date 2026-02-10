@@ -226,7 +226,7 @@ The real value shows up when models disagree. Here are cross-model disagreement 
 
 **Topic: Terminal drag-and-drop / image paste** — _Claude Opus, Gemini Pro, Codex_
 
-All 4 agents agreed on these key points:
+All 3 agents agreed on these key points:
 
 1. Drag-and-drop should insert shell-escaped file paths — this is the universal convention (Terminal.app, iTerm2, Kitty, Ghostty native all do it). Highest value, lowest effort. Do it first.
 2. Image paste should save to a temp file and insert the path — no terminal pastes raw image data. Show a toast to explain what happened.

@@ -25,4 +25,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - SIGINT handler properly terminates active child processes
 
-[Unreleased]: https://github.com/OWNER/REPO/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/aarondfrancis/counselors/compare/v0.1.0...HEAD
