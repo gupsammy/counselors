@@ -39,18 +39,11 @@ counselors doctor           # Verify tools are working
 
 ## 3. Install the skill
 
-The \`/counselors\` skill lets AI coding agents invoke counselors directly via a slash command. To install it, save the skill template to the well-known location for your agent.
+The \`/counselors\` skill lets AI coding agents invoke counselors directly via a slash command.
 
-### Claude Code
+Run \`counselors skill\` to print a reference template with instructions. **Read the output carefully** — it describes a multi-phase workflow that you need to adapt to your agent's skill format before saving. Do not blindly copy the output into a file.
 
-\`\`\`bash
-mkdir -p ~/.claude/skills/counselors
-counselors skill > ~/.claude/skills/counselors/SKILL.md
-\`\`\`
-
-### Other agents
-
-The skill location varies by agent system. Print the template with \`counselors skill\` and save it wherever your agent looks for slash commands or skills.
+For Claude Code, save the adapted skill to \`~/.claude/skills/counselors/SKILL.md\`. For other agents, save it wherever your system looks for slash commands or skills.
 
 ## 4. Verify
 

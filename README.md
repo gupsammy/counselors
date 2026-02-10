@@ -1,5 +1,7 @@
 # counselors
 
+By [Aaron Francis](https://aaronfrancis.com), creator of [Faster.dev](https://faster.dev) and [Solo](https://soloterm.com).
+
 Fan out prompts to multiple AI coding agents in parallel.
 
 `counselors` dispatches the same prompt to Claude, Codex, Gemini, Amp, or custom tools simultaneously, collects their responses, and writes everything to a structured output directory.
