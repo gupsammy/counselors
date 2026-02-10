@@ -4,7 +4,7 @@ Fan out prompts to multiple AI coding agents in parallel.
 
 `counselors` dispatches the same prompt to Claude, Codex, Gemini, Amp, or custom tools simultaneously, collects their responses, and writes everything to a structured output directory.
 
-## Agentic Quick Start
+## Agentic quickstart
 
 Already inside an AI coding agent? Paste this prompt:
 
@@ -14,7 +14,16 @@ Install counselors globally with `npm install -g counselors`, then run `counselo
 
 That's it. Your agent will install the CLI, configure available tools, and set up the `/counselors` slash command.
 
-## Quick Start
+**How it works:**
+
+1. You invoke the Counselors skill with a prompt
+2. Your agent gathers context from the codebase
+3. Your agent asks which other agents you want to consult
+4. Counselors fans out to those agents in parallel for independent research
+5. Each agent writes a structured markdown report
+6. Your main agent synthesizes and presents the results
+
+## Quickstart
 
 ```bash
 npm install -g counselors
@@ -29,7 +38,7 @@ counselors run "Explain the authentication flow in this codebase"
 counselors run -t claude,codex "Review this error handling"
 ```
 
-## Supported Tools
+## Supported tools
 
 | Tool | Adapter | Read-Only | Install |
 |------|---------|-----------|---------|
@@ -102,7 +111,7 @@ Print a `/counselors` slash-command template for use inside Claude Code or other
 
 ## Configuration
 
-### Global Config
+### Global config
 
 `~/.config/counselors/config.json` (respects `XDG_CONFIG_HOME`)
 
@@ -127,7 +136,7 @@ Print a `/counselors` slash-command template for use inside Claude Code or other
 }
 ```
 
-### Project Config
+### Project config
 
 Place a `.counselors.json` in your project root to override `defaults` per-project. Project configs cannot add or modify `tools` (security boundary).
 
@@ -140,7 +149,7 @@ Place a `.counselors.json` in your project root to override `defaults` per-proje
 }
 ```
 
-## Read-Only Modes
+## Read-only modes
 
 | Level | Behavior |
 |-------|----------|
@@ -150,7 +159,7 @@ Place a `.counselors.json` in your project root to override `defaults` per-proje
 
 The `--read-only` flag on `run` controls the policy: `strict` only dispatches to tools with `enforced` support, `best-effort` uses whatever each tool supports, `off` disables read-only flags entirely. When omitted, falls back to the `readOnly` setting in your config defaults (which defaults to `bestEffort`).
 
-## Output Structure
+## Output structure
 
 Each run creates a timestamped directory:
 
@@ -163,7 +172,7 @@ Each run creates a timestamped directory:
   {tool-id}.stderr       # Each tool's stderr
 ```
 
-## Skill / Slash Command
+## Skill / slash command
 
 Install `/counselors` as a skill in Claude Code or other agents:
 
@@ -197,7 +206,7 @@ npm run lint         # biome check
 
 Requires Node 20+. TypeScript with ESM, built with tsup, tested with vitest, linted with biome.
 
-## Known Issues
+## Known issues
 
 - **Amp `deep` model uses Bash to read files.** The `deep` model (GPT-5.2 Codex) reads files via `Bash` rather than the `Read` tool. Because `Bash` is a write-capable tool, we cannot guarantee that deep mode will not modify files. A mandatory read-only instruction is injected into the prompt, but this is a best-effort safeguard. For safety-critical tasks, prefer `amp-smart`.
 
