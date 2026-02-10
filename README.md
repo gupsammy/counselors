@@ -27,6 +27,15 @@ That's it. Your agent will install the CLI, configure available tools, and set u
 5. Each agent writes a structured markdown report
 6. Your main agent synthesizes and presents the results
 
+**Example:** after a big refactor, ask your agents for a second opinion:
+
+```
+/counselors We just completed a major refactor of the authentication module.
+Review the changes for edge cases, test gaps, or regressions we might have missed.
+```
+
+Your main agent handles the rest — it gathers relevant code, recent commits, and assembles a detailed prompt before dispatching to the counselors.
+
 ## Human quickstart
 
 ```bash
