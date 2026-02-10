@@ -63,3 +63,19 @@ export const MAX_SLUG_LENGTH = 40;
 // ── File permissions ──
 
 export const CONFIG_FILE_MODE = 0o600;
+
+// ── Safe ID patterns ──
+
+/** Sanitize a tool ID for safe use in filenames. */
+export function sanitizeId(id: string): string {
+  return id.replace(/[^a-zA-Z0-9._-]/g, '_');
+}
+
+/** Regex for validating tool names (letters, numbers, dots, hyphens, underscores). */
+export const SAFE_ID_RE = /^[a-zA-Z0-9._-]+$/;
+
+// ── Version ──
+
+declare const __VERSION__: string;
+export const VERSION =
+  typeof __VERSION__ !== 'undefined' ? __VERSION__ : '0.0.0-dev';

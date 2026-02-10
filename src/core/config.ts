@@ -1,13 +1,9 @@
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { z } from 'zod';
 import { CONFIG_FILE, CONFIG_FILE_MODE } from '../constants.js';
 import { type Config, ConfigSchema, type ToolConfig } from '../types.js';
+import { safeWriteFile } from './fs-utils.js';
 
 const DEFAULT_CONFIG: Config = {
   version: 1,
@@ -36,10 +32,24 @@ export function loadConfig(globalPath?: string): Config {
   return ConfigSchema.parse(raw);
 }
 
-/** Schema for project config — only defaults are allowed, not tools. */
-const ProjectConfigSchema = ConfigSchema.pick({ defaults: true }).partial();
+/** Schema for project config — only defaults are allowed, not tools.
+ *  Uses .optional() (not .default()) so missing fields stay absent
+ *  and don't clobber global config during merge. */
+const ProjectConfigSchema = z.object({
+  defaults: z
+    .object({
+      timeout: z.number().optional(),
+      outputDir: z.string().optional(),
+      readOnly: z.enum(['enforced', 'bestEffort', 'none']).optional(),
+      maxContextKb: z.number().optional(),
+      maxParallel: z.number().optional(),
+    })
+    .optional(),
+});
 
-export function loadProjectConfig(cwd: string): Partial<Config> | null {
+type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
+
+export function loadProjectConfig(cwd: string): ProjectConfig | null {
   const path = resolve(cwd, '.counselors.json');
   if (!existsSync(path)) return null;
 
@@ -56,7 +66,7 @@ export function loadProjectConfig(cwd: string): Partial<Config> | null {
 
 export function mergeConfigs(
   global: Config,
-  project: Partial<Config> | null,
+  project: ProjectConfig | null,
   cliFlags?: Partial<Config['defaults']>,
 ): Config {
   const merged: Config = {
@@ -82,8 +92,9 @@ export function mergeConfigs(
 export function saveConfig(config: Config, path?: string): void {
   const filePath = path ?? CONFIG_FILE;
   mkdirSync(dirname(filePath), { recursive: true });
-  writeFileSync(filePath, `${JSON.stringify(config, null, 2)}\n`, 'utf-8');
-  chmodSync(filePath, CONFIG_FILE_MODE);
+  safeWriteFile(filePath, `${JSON.stringify(config, null, 2)}\n`, {
+    mode: CONFIG_FILE_MODE,
+  });
 }
 
 export function addToolToConfig(

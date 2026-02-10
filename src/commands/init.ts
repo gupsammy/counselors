@@ -1,9 +1,7 @@
-import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type { Command } from 'commander';
 import { getAllBuiltInAdapters, resolveAdapter } from '../adapters/index.js';
 import { AMP_SETTINGS_FILE, CONFIG_DIR } from '../constants.js';
+import { copyAmpSettings } from '../core/amp-utils.js';
 import { addToolToConfig, loadConfig, saveConfig } from '../core/config.js';
 import { discoverTool } from '../core/discovery.js';
 import { executeTest } from '../core/executor.js';
@@ -46,19 +44,6 @@ function compoundId(adapterId: string, modelId: string): string {
   return `${adapterId}-${modelId}`;
 }
 
-function copyAmpSettings(): void {
-  mkdirSync(CONFIG_DIR, { recursive: true });
-  const assetsDir = resolve(
-    dirname(fileURLToPath(import.meta.url)),
-    '..',
-    'assets',
-  );
-  const bundledSettings = resolve(assetsDir, 'amp-readonly-settings.json');
-  if (existsSync(bundledSettings)) {
-    copyFileSync(bundledSettings, AMP_SETTINGS_FILE);
-  }
-}
-
 export function registerInitCommand(program: Command): void {
   program
     .command('init')
@@ -78,7 +63,7 @@ export function registerInitCommand(program: Command): void {
 
         const foundTools = discoveries.filter((d) => d.discovery.found);
         if (foundTools.length === 0) {
-          console.log(
+          info(
             JSON.stringify(
               {
                 configured: [],
@@ -137,7 +122,7 @@ export function registerInitCommand(program: Command): void {
 
         saveConfig(config);
 
-        console.log(
+        info(
           JSON.stringify(
             { configured, notFound, configPath: CONFIG_DIR },
             null,

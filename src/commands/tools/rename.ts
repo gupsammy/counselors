@@ -1,12 +1,11 @@
 import type { Command } from 'commander';
+import { SAFE_ID_RE } from '../../constants.js';
 import {
   loadConfig,
   renameToolInConfig,
   saveConfig,
 } from '../../core/config.js';
 import { error, success } from '../../ui/logger.js';
-
-const SAFE_ID_RE = /^[a-zA-Z0-9._-]+$/;
 
 export function registerRenameCommand(program: Command): void {
   program

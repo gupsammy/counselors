@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { DEFAULT_MAX_CONTEXT_KB } from '../constants.js';
@@ -61,7 +61,9 @@ export function gatherContext(
         totalBytes += diffBytes;
       } else {
         const remaining = maxBytes - totalBytes;
-        const truncated = diff.slice(0, remaining);
+        const truncated = Buffer.from(diff)
+          .subarray(0, remaining)
+          .toString('utf-8');
         parts.push(
           '### Recent Changes (Git Diff) [truncated]',
           '',
@@ -80,17 +82,19 @@ export function gatherContext(
 
 function getGitDiff(cwd: string): string | null {
   try {
-    const staged = execSync('git diff --staged', {
+    const staged = execFileSync('git', ['diff', '--staged'], {
       cwd,
       encoding: 'utf-8',
       timeout: 10_000,
+      maxBuffer: 10 * 1024 * 1024,
       stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
 
-    const unstaged = execSync('git diff', {
+    const unstaged = execFileSync('git', ['diff'], {
       cwd,
       encoding: 'utf-8',
       timeout: 10_000,
+      maxBuffer: 10 * 1024 * 1024,
       stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
 

@@ -6,6 +6,8 @@ import {
   getAllBuiltInAdapters,
   isBuiltInTool,
 } from '../../adapters/index.js';
+import { SAFE_ID_RE } from '../../constants.js';
+import { copyAmpSettings } from '../../core/amp-utils.js';
 import { addToolToConfig, loadConfig, saveConfig } from '../../core/config.js';
 import { discoverTool, findBinary } from '../../core/discovery.js';
 import type { ReadOnlyLevel, ToolConfig } from '../../types.js';
@@ -15,7 +17,7 @@ import {
   confirmOverwrite,
   promptInput,
   promptSelect,
-  selectModel,
+  selectModelDetails,
 } from '../../ui/prompts.js';
 
 const CUSTOM_TOOL_VALUE = '__custom__';
@@ -111,12 +113,19 @@ async function addBuiltInTool(
     return;
   }
 
-  const model = await selectModel(toolId, adapter.models);
+  const selectedModel = await selectModelDetails(toolId, adapter.models);
 
   // Pick a name for this tool config
-  let name = nameOverride ?? toolId;
-  if (!nameOverride) {
-    name = await promptInput('Tool name:', `${toolId}-${model}`);
+  const defaultName =
+    nameOverride ?? selectedModel.compoundId ?? `${toolId}-${selectedModel.id}`;
+  let name = nameOverride ?? (await promptInput('Tool name:', defaultName));
+
+  if (!SAFE_ID_RE.test(name)) {
+    error(
+      `Invalid tool name "${name}". Use only letters, numbers, dots, hyphens, and underscores.`,
+    );
+    process.exitCode = 1;
+    return;
   }
 
   // Check for conflicts
@@ -125,6 +134,13 @@ async function addBuiltInTool(
     if (!overwrite) {
       // Let them pick a different name
       name = await promptInput('Pick a different name:');
+      if (!SAFE_ID_RE.test(name)) {
+        error(
+          `Invalid tool name "${name}". Use only letters, numbers, dots, hyphens, and underscores.`,
+        );
+        process.exitCode = 1;
+        return;
+      }
       if (config.tools[name]) {
         error(`"${name}" also exists. Run "counselors tools add" again.`);
         process.exitCode = 1;
@@ -135,16 +151,31 @@ async function addBuiltInTool(
 
   const toolConfig: ToolConfig = {
     binary: discovery.path!,
-    defaultModel: model,
+    defaultModel: selectedModel.id,
     models: adapter.models.map((m) => m.id),
     readOnly: { level: adapter.readOnly.level },
-    promptMode: toolId === 'amp' ? 'stdin' : 'argument',
+    promptMode: (toolId === 'amp' || toolId === 'gemini'
+      ? 'stdin'
+      : 'argument') as 'argument' | 'stdin',
     modelFlag:
-      toolId === 'codex' ? '-m' : toolId === 'gemini' ? '-m' : '--model',
+      toolId === 'codex'
+        ? '-m'
+        : toolId === 'gemini'
+          ? '-m'
+          : toolId === 'amp'
+            ? '-m'
+            : '--model',
+    adapter: toolId,
+    ...(selectedModel.extraFlags
+      ? { extraFlags: selectedModel.extraFlags }
+      : {}),
   };
 
   const updated = addToolToConfig(config, name, toolConfig);
   saveConfig(updated);
+  if (toolId === 'amp') {
+    copyAmpSettings();
+  }
   success(`Added "${name}" to config.`);
 }
 
@@ -225,6 +256,14 @@ async function collectCustomConfig(
     defaultId,
   );
 
+  if (!SAFE_ID_RE.test(toolId)) {
+    error(
+      `Invalid tool name "${toolId}". Use only letters, numbers, dots, hyphens, and underscores.`,
+    );
+    process.exitCode = 1;
+    return;
+  }
+
   // Preview
   info('');
   info('  Tool will be invoked as:');
@@ -241,6 +280,13 @@ async function collectCustomConfig(
     const overwrite = await confirmOverwrite(toolId);
     if (!overwrite) {
       const newId = await promptInput('Pick a different name:');
+      if (!SAFE_ID_RE.test(newId)) {
+        error(
+          `Invalid tool name "${newId}". Use only letters, numbers, dots, hyphens, and underscores.`,
+        );
+        process.exitCode = 1;
+        return;
+      }
       if (config.tools[newId]) {
         error(`"${newId}" also exists. Run "counselors tools add" again.`);
         process.exitCode = 1;

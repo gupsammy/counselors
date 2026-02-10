@@ -1,18 +1,31 @@
 import { checkbox, confirm, input, select } from '@inquirer/prompts';
 
-export async function selectModel(
+export async function selectModelDetails(
   toolId: string,
-  models: { id: string; name: string; recommended?: boolean }[],
-): Promise<string> {
-  const choices = models.map((m) => ({
+  models: {
+    id: string;
+    name: string;
+    recommended?: boolean;
+    compoundId?: string;
+    extraFlags?: string[];
+  }[],
+): Promise<{ id: string; compoundId?: string; extraFlags?: string[] }> {
+  const choices = models.map((m, i) => ({
     name: m.recommended ? `${m.name} (Recommended)` : m.name,
-    value: m.id,
+    value: String(i),
   }));
 
-  return select({
+  const idx = await select({
     message: `Select model for ${toolId}:`,
     choices,
   });
+
+  const model = models[Number(idx)];
+  return {
+    id: model.id,
+    compoundId: model.compoundId,
+    extraFlags: model.extraFlags,
+  };
 }
 
 export async function selectModels(

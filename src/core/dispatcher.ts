@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import pLimit from 'p-limit';
 import { resolveAdapter } from '../adapters/index.js';
+import { sanitizeId } from '../constants.js';
 import type {
   Config,
   ReadOnlyLevel,
@@ -20,10 +21,6 @@ export interface ProgressEvent {
   model: string;
   event: 'started' | 'completed';
   report?: ToolReport;
-}
-
-function sanitizeId(id: string): string {
-  return id.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
 export interface DispatchOptions {

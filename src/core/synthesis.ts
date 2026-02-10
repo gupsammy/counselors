@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { sanitizeId } from '../constants.js';
 import type { RunManifest, ToolReport } from '../types.js';
 
 /**
@@ -75,7 +76,7 @@ export function synthesize(manifest: RunManifest, outputDir: string): string {
 }
 
 function extractHeadings(outputDir: string, report: ToolReport): string[] {
-  const filePath = join(outputDir, `${report.toolId}.md`);
+  const filePath = join(outputDir, `${sanitizeId(report.toolId)}.md`);
   if (!existsSync(filePath)) return [];
 
   try {

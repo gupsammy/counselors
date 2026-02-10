@@ -37,6 +37,27 @@ const ENV_ALLOWLIST = [
   'TMPDIR',
   'XDG_CONFIG_HOME',
   'XDG_DATA_HOME',
+  // Node version managers
+  'NVM_BIN',
+  'NVM_DIR',
+  'FNM_MULTISHELL_PATH',
+  // API keys for adapters
+  'ANTHROPIC_API_KEY',
+  'OPENAI_API_KEY',
+  'OPENAI_ORG_ID',
+  'GEMINI_API_KEY',
+  'GOOGLE_API_KEY',
+  'GOOGLE_APPLICATION_CREDENTIALS',
+  'AMP_API_KEY',
+  // Proxy
+  'HTTP_PROXY',
+  'HTTPS_PROXY',
+  'NO_PROXY',
+  'http_proxy',
+  'https_proxy',
+  'no_proxy',
+  // Node runtime
+  'NODE_OPTIONS',
 ] as const;
 
 function buildSafeEnv(extra?: Record<string, string>): Record<string, string> {

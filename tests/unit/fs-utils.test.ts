@@ -3,6 +3,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   symlinkSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -39,6 +40,32 @@ describe('safeWriteFile', () => {
     safeWriteFile(path, 'content');
     const files = readdirSync(testDir);
     expect(files).toEqual(['clean.txt']);
+  });
+
+  it('applies file mode when option is provided', () => {
+    const path = join(testDir, 'secure.txt');
+    safeWriteFile(path, 'secret', { mode: 0o600 });
+    expect(readFileSync(path, 'utf-8')).toBe('secret');
+    const mode = statSync(path).mode & 0o777;
+    expect(mode).toBe(0o600);
+  });
+
+  it('throws on write failure instead of swallowing', () => {
+    // Writing to a nonexistent directory should throw
+    const path = join(testDir, 'no-such-dir', 'nested', 'file.txt');
+    expect(() => safeWriteFile(path, 'content')).toThrow();
+  });
+
+  it('cleans up temp file on failure', () => {
+    const path = join(testDir, 'no-such-dir', 'nested', 'file.txt');
+    try {
+      safeWriteFile(path, 'content');
+    } catch {
+      // expected
+    }
+    // No temp files should remain in testDir
+    const files = readdirSync(testDir);
+    expect(files).toHaveLength(0);
   });
 
   it('overwrites symlinks atomically (rename replaces target)', () => {

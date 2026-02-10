@@ -153,6 +153,102 @@ describe('execute', () => {
     expect(result.stdout).toBe('tool-specific');
   });
 
+  it('passes API key env vars through to child processes', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+    process.env.OPENAI_API_KEY = 'test-openai-key';
+    process.env.GEMINI_API_KEY = 'test-gemini-key';
+    try {
+      const result = await execute(
+        {
+          cmd: 'node',
+          args: [
+            '-e',
+            'process.stdout.write([process.env.ANTHROPIC_API_KEY, process.env.OPENAI_API_KEY, process.env.GEMINI_API_KEY].join(","))',
+          ],
+          cwd: process.cwd(),
+        },
+        5000,
+      );
+
+      expect(result.stdout).toBe(
+        'test-anthropic-key,test-openai-key,test-gemini-key',
+      );
+    } finally {
+      delete process.env.ANTHROPIC_API_KEY;
+      delete process.env.OPENAI_API_KEY;
+      delete process.env.GEMINI_API_KEY;
+    }
+  });
+
+  it('passes NVM_BIN through to child processes', async () => {
+    process.env.NVM_BIN = '/fake/nvm/bin';
+    try {
+      const result = await execute(
+        {
+          cmd: 'node',
+          args: [
+            '-e',
+            'process.stdout.write(process.env.NVM_BIN || "NOT_SET")',
+          ],
+          cwd: process.cwd(),
+        },
+        5000,
+      );
+
+      expect(result.stdout).toBe('/fake/nvm/bin');
+    } finally {
+      delete process.env.NVM_BIN;
+    }
+  });
+
+  it('passes proxy env vars through to child processes', async () => {
+    process.env.HTTP_PROXY = 'http://proxy:8080';
+    process.env.HTTPS_PROXY = 'https://proxy:8443';
+    process.env.NO_PROXY = 'localhost';
+    try {
+      const result = await execute(
+        {
+          cmd: 'node',
+          args: [
+            '-e',
+            'process.stdout.write([process.env.HTTP_PROXY, process.env.HTTPS_PROXY, process.env.NO_PROXY].join(","))',
+          ],
+          cwd: process.cwd(),
+        },
+        5000,
+      );
+
+      expect(result.stdout).toBe(
+        'http://proxy:8080,https://proxy:8443,localhost',
+      );
+    } finally {
+      delete process.env.HTTP_PROXY;
+      delete process.env.HTTPS_PROXY;
+      delete process.env.NO_PROXY;
+    }
+  });
+
+  it('passes NODE_OPTIONS through to child processes', async () => {
+    process.env.NODE_OPTIONS = '--max-old-space-size=4096';
+    try {
+      const result = await execute(
+        {
+          cmd: 'node',
+          args: [
+            '-e',
+            'process.stdout.write(process.env.NODE_OPTIONS || "NOT_SET")',
+          ],
+          cwd: process.cwd(),
+        },
+        5000,
+      );
+
+      expect(result.stdout).toBe('--max-old-space-size=4096');
+    } finally {
+      delete process.env.NODE_OPTIONS;
+    }
+  });
+
   it('always sets CI=true and NO_COLOR=1', async () => {
     const result = await execute(
       {

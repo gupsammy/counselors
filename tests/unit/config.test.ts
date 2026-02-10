@@ -1,4 +1,10 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -85,6 +91,23 @@ describe('saveConfig', () => {
     expect(existsSync(testConfigFile)).toBe(true);
     const loaded = loadConfig(testConfigFile);
     expect(loaded.version).toBe(1);
+  });
+
+  it('writes config with restrictive file permissions (0o600)', () => {
+    const config: Config = {
+      version: 1,
+      defaults: {
+        timeout: 540,
+        outputDir: './agents/counselors',
+        readOnly: 'bestEffort',
+        maxContextKb: 50,
+        maxParallel: 4,
+      },
+      tools: {},
+    };
+    saveConfig(config, testConfigFile);
+    const mode = statSync(testConfigFile).mode & 0o777;
+    expect(mode).toBe(0o600);
   });
 });
 
@@ -209,6 +232,34 @@ describe('loadProjectConfig', () => {
   it('throws on malformed JSON in project config', () => {
     writeFileSync(join(testDir, '.counselors.json'), '!!!not json');
     expect(() => loadProjectConfig(testDir)).toThrow(/Invalid JSON in/);
+  });
+
+  it('partial project config does not clobber unset global defaults', () => {
+    // Project only sets timeout — readOnly, outputDir, etc. should survive merge
+    writeFileSync(
+      join(testDir, '.counselors.json'),
+      JSON.stringify({ defaults: { timeout: 120 } }),
+    );
+    const project = loadProjectConfig(testDir);
+
+    const global: Config = {
+      version: 1,
+      defaults: {
+        timeout: 540,
+        outputDir: './custom-output',
+        readOnly: 'enforced',
+        maxContextKb: 100,
+        maxParallel: 8,
+      },
+      tools: {},
+    };
+
+    const merged = mergeConfigs(global, project);
+    expect(merged.defaults.timeout).toBe(120); // overridden
+    expect(merged.defaults.outputDir).toBe('./custom-output'); // preserved
+    expect(merged.defaults.readOnly).toBe('enforced'); // preserved
+    expect(merged.defaults.maxContextKb).toBe(100); // preserved
+    expect(merged.defaults.maxParallel).toBe(8); // preserved
   });
 });
 

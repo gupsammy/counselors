@@ -13,7 +13,7 @@ import {
   resolveOutputDir,
 } from '../core/prompt-builder.js';
 import { synthesize } from '../core/synthesis.js';
-import type { ReadOnlyLevel, RunManifest } from '../types.js';
+import type { ReadOnlyLevel, RunManifest, ToolReport } from '../types.js';
 import { error, info } from '../ui/logger.js';
 import { formatDryRun, formatRunSummary } from '../ui/output.js';
 import { ProgressDisplay } from '../ui/progress.js';
@@ -29,11 +29,7 @@ export function registerRunCommand(program: Command): void {
       '--context <paths>',
       'Gather context from paths (comma-separated, or "." for git diff)',
     )
-    .option(
-      '--read-only <level>',
-      'Read-only policy: strict, best-effort, off',
-      'best-effort',
-    )
+    .option('--read-only <level>', 'Read-only policy: strict, best-effort, off')
     .option('--dry-run', 'Show what would be dispatched without running')
     .option('--json', 'Output manifest as JSON')
     .option('-o, --output-dir <dir>', 'Base output directory')
@@ -44,7 +40,7 @@ export function registerRunCommand(program: Command): void {
           file?: string;
           tools?: string;
           context?: string;
-          readOnly: string;
+          readOnly?: string;
           dryRun?: boolean;
           json?: boolean;
           outputDir?: string;
@@ -100,16 +96,25 @@ export function registerRunCommand(program: Command): void {
           toolIds = selected;
         }
 
-        // Map read-only flag
+        // Map read-only flag (fall back to config default)
+        const internalToCliMap: Record<string, string> = {
+          enforced: 'strict',
+          bestEffort: 'best-effort',
+          none: 'off',
+        };
+        const readOnlyInput =
+          opts.readOnly ??
+          internalToCliMap[config.defaults.readOnly] ??
+          'best-effort';
         const readOnlyMap: Record<string, ReadOnlyLevel> = {
           strict: 'enforced',
           'best-effort': 'bestEffort',
           off: 'none',
         };
-        const readOnlyPolicy = readOnlyMap[opts.readOnly];
+        const readOnlyPolicy = readOnlyMap[readOnlyInput];
         if (!readOnlyPolicy) {
           error(
-            `Invalid --read-only value "${opts.readOnly}". Must be: strict, best-effort, or off.`,
+            `Invalid --read-only value "${readOnlyInput}". Must be: strict, best-effort, or off.`,
           );
           process.exitCode = 1;
           return;
@@ -234,22 +239,25 @@ export function registerRunCommand(program: Command): void {
           outputDir,
         );
 
-        const reports = await dispatch({
-          config,
-          toolIds,
-          promptFilePath,
-          promptContent,
-          outputDir,
-          readOnlyPolicy,
-          cwd,
-          onProgress: (event) => {
-            if (event.event === 'started') display.start(event.toolId);
-            if (event.event === 'completed')
-              display.complete(event.toolId, event.report!);
-          },
-        });
-
-        display.stop();
+        let reports: ToolReport[];
+        try {
+          reports = await dispatch({
+            config,
+            toolIds,
+            promptFilePath,
+            promptContent,
+            outputDir,
+            readOnlyPolicy,
+            cwd,
+            onProgress: (event) => {
+              if (event.event === 'started') display.start(event.toolId);
+              if (event.event === 'completed')
+                display.complete(event.toolId, event.report!);
+            },
+          });
+        } finally {
+          display.stop();
+        }
 
         // Build manifest
         const manifest: RunManifest = {

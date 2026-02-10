@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import type { Command } from 'commander';
-import { getAdapter, isBuiltInTool } from '../adapters/index.js';
+import { resolveAdapter } from '../adapters/index.js';
 import { AMP_SETTINGS_FILE, CONFIG_FILE } from '../constants.js';
 import { loadConfig } from '../core/config.js';
 import { findBinary, getBinaryVersion } from '../core/discovery.js';
@@ -91,9 +91,7 @@ export function registerDoctorCommand(program: Command): void {
         }
 
         // Read-only capability
-        const adapter = isBuiltInTool(id)
-          ? getAdapter(id)
-          : getAdapter(id, toolConfig);
+        const adapter = resolveAdapter(id, toolConfig);
         checks.push({
           name: `${id}: read-only`,
           status:
@@ -106,8 +104,11 @@ export function registerDoctorCommand(program: Command): void {
         });
       }
 
-      // Check amp settings file if amp is configured
-      if (config.tools.amp) {
+      // Check amp settings file if any amp-based tool is configured
+      const hasAmp = Object.entries(config.tools).some(
+        ([id, t]) => (t.adapter ?? id) === 'amp',
+      );
+      if (hasAmp) {
         if (existsSync(AMP_SETTINGS_FILE)) {
           checks.push({
             name: 'Amp settings file',

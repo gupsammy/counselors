@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import { getAdapter, isBuiltInTool } from '../../adapters/index.js';
+import { resolveAdapter } from '../../adapters/index.js';
 import { loadConfig } from '../../core/config.js';
 import { executeTest } from '../../core/executor.js';
 import type { TestResult } from '../../types.js';
@@ -38,9 +38,7 @@ export function registerTestCommand(program: Command): void {
         }
 
         const spinner = createSpinner(`Testing ${id}...`).start();
-        const adapter = isBuiltInTool(id)
-          ? getAdapter(id)
-          : getAdapter(id, toolConfig);
+        const adapter = resolveAdapter(id, toolConfig);
         const result = await executeTest(adapter, toolConfig, id);
         spinner.stop();
 

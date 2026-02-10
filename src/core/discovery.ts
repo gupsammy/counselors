@@ -22,16 +22,20 @@ import type { DiscoveryResult } from '../types.js';
  * 2. Manual scan of extended paths
  */
 export function findBinary(command: string): string | null {
-  // Stage 1: which
+  // Stage 1: which (Unix) / where (Windows)
+  const lookupCmd = process.platform === 'win32' ? 'where' : 'which';
   try {
-    const result = execFileSync('which', [command], {
+    const result = execFileSync(lookupCmd, [command], {
       timeout: DISCOVERY_TIMEOUT,
       stdio: ['pipe', 'pipe', 'pipe'],
       encoding: 'utf-8',
-    }).trim();
+    })
+      .trim()
+      .split('\n')[0]
+      .trim(); // `where` on Windows may return multiple lines
     if (result) return result;
   } catch {
-    // not found via which, continue to stage 2
+    // not found via lookup, continue to stage 2
   }
 
   // Stage 2: extended path scan

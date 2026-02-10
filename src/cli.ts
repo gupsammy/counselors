@@ -10,13 +10,14 @@ import { registerListCommand } from './commands/tools/list.js';
 import { registerRemoveCommand } from './commands/tools/remove.js';
 import { registerRenameCommand } from './commands/tools/rename.js';
 import { registerTestCommand } from './commands/tools/test.js';
+import { VERSION } from './constants.js';
 
 const program = new Command();
 
 program
   .name('counselors')
   .description('Fan out prompts to multiple AI coding agents in parallel')
-  .version('0.1.0');
+  .version(VERSION);
 
 // Top-level commands
 registerRunCommand(program);

@@ -29,7 +29,7 @@ describe('CLI', () => {
 
   it('shows version', () => {
     const output = run('--version');
-    expect(output).toContain('0.1.0');
+    expect(output).toMatch(/^\d+\.\d+\.\d+/);
   });
 
   it('tools list shows no tools when unconfigured', () => {
