@@ -36,10 +36,10 @@ npm install -g counselors
 counselors init
 
 # Send a prompt to all configured tools
-counselors run "Explain the authentication flow in this codebase"
+counselors run "Trace the state management flow in the dashboard and flag any brittleness or stale state bugs"
 
 # Send to specific tools only
-counselors run -t claude,codex "Review this error handling"
+counselors run -t claude,codex "Review src/api/ for security issues and missing edge cases"
 ```
 
 ## Supported tools
@@ -208,6 +208,10 @@ The real value shows up when models disagree. Here are cross-model disagreement 
 
 **Topic: Tauri close-request handling** — _Claude Opus, Gemini Pro, Codex_
 
+```
+/counselors Review my plan for handling Tauri 2.x close-request events — is the CloseRequested API usage correct, are there known emit_to bugs, and should "Stop All" be per-window or global?
+```
+
 | Topic | Claude Opus | Gemini Pro | Codex |
 |-------|-------------|------------|-------|
 | CloseRequested API | Says `set_prevent_default(true)` is correct for Tauri 2.x | Agrees plan is correct | Says plan is wrong — claims `api.prevent_close()` is needed |
@@ -218,6 +222,10 @@ The real value shows up when models disagree. Here are cross-model disagreement 
 
 **Topic: Escape key / modal stacking** — _Codex, Gemini, Amp_
 
+```
+/counselors How should I implement escape-to-dismiss for stacked modals? Currently openModals is a Set and Escape closes everything. I want it to dismiss only the topmost modal.
+```
+
 | Approach | Codex | Gemini | Amp |
 |----------|-------|--------|-----|
 | Stack location | Parallel `modalStack: string[]` alongside `openModals: Set` | Replace `openModals: Set` → `openModals: string[]` | Separate `escapeStack` + `escapeHandlers` alongside `openModals: Set` |
@@ -227,6 +235,10 @@ The real value shows up when models disagree. Here are cross-model disagreement 
 ---
 
 **Topic: Terminal drag-and-drop / image paste** — _Claude Opus, Gemini Pro, Codex_
+
+```
+/counselors What's the best approach for drag-and-drop files and image paste in my ghostty-web terminal? Is inline image rendering feasible on the Canvas/WASM renderer or should I just insert file paths?
+```
 
 All 3 agents agreed on these key points:
 
@@ -245,6 +257,10 @@ The synthesizing agent's assessment: Claude Opus and Codex are correct — ghost
 
 **Topic: Rust detection module refactor** — _Claude, Gemini, Codex_
 
+```
+/counselors The detection module is ~1200 lines in one file with boolean fields on DetectionContext. How should I refactor it — module directory, lazy file checks, rule engine? Also check for bugs in dedup and orchestration-skip logic.
+```
+
 All 3 agents agreed:
 
 1. Split into `detection/` module directory — 1200-line file is the most immediate problem
@@ -257,6 +273,10 @@ Codex also found 2 bugs all agents acknowledged: dedup by name drops valid sugge
 ---
 
 **Topic: ghostty-web 0.3.0 to 0.4.0 upgrade** — _Claude, Codex, Gemini_
+
+```
+/counselors Review my ghostty-web 0.3.0 → 0.4.0 upgrade plan. Key concerns: getLine() WASM bug, DSR response handling, isComposing guard for CJK, phase ordering, and renderer.metrics hack risk.
+```
 
 | Question | Consensus |
 |----------|-----------|
