@@ -57,10 +57,10 @@ validate() {
     trimmed=$(echo "$unreleased_content" | grep -v '^[[:space:]]*$' | grep -v '^###' || true)
 
     if [[ -z "$trimmed" ]]; then
-        error "No changes found in [Unreleased] section. Add changelog entries before releasing."
+        warn "No unreleased changes found. Will use default release notes."
+    else
+        success "Changelog validation passed. Found unreleased changes."
     fi
-
-    success "Changelog validation passed. Found unreleased changes."
 }
 
 # Move unreleased content to a new version section
@@ -78,6 +78,29 @@ release() {
 
     check_changelog_exists
     validate
+
+    # If unreleased section is empty, inject default content
+    local unreleased_content
+    unreleased_content=$(awk '
+        /^## \[Unreleased\]/ { capture = 1; next }
+        /^## \[/ && capture { exit }
+        capture { print }
+    ' "$CHANGELOG_FILE")
+
+    local trimmed
+    trimmed=$(echo "$unreleased_content" | grep -v '^[[:space:]]*$' | grep -v '^###' || true)
+
+    if [[ -z "$trimmed" ]]; then
+        if [[ "$(uname)" == "Darwin" ]]; then
+            sed -i '' '/^## \[Unreleased\]/a\
+\
+### Fixed\
+- Various bug fixes\
+' "$CHANGELOG_FILE"
+        else
+            sed -i '/^## \[Unreleased\]/a\\n### Fixed\n- Various bug fixes\n' "$CHANGELOG_FILE"
+        fi
+    fi
 
     local date
     date=$(date +%Y-%m-%d)
