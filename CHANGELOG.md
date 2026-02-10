@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Gemini CLI read-only level upgraded from `bestEffort` to `enforced` (tool restrictions are sufficient)
+- Doctor no longer warns on `bestEffort` read-only level — only `none` triggers a warning
+
+### Fixed
+- Doctor correctly reports Amp deep mode as `bestEffort` instead of `enforced`
+
 ## [0.3.2] - 2026-02-10
 
 ### Fixed
