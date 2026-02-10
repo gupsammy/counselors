@@ -25,7 +25,7 @@ That's it. Your agent will install the CLI, configure available tools, and set u
 5. Each agent writes a structured markdown report
 6. Your main agent synthesizes and presents the results
 
-## Quickstart
+## Human quickstart
 
 ```bash
 npm install -g counselors
