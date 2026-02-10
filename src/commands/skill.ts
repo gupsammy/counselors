@@ -72,12 +72,13 @@ Be selective — don't dump the entire codebase. Pick the most relevant code sec
    - "review the auth flow" → \`auth-flow-review\`
    - "is this migration safe" → \`migration-safety-review\`
 
-2. **Create the output directory** via Bash:
+2. **Create the output directory** via Bash. The directory name MUST always be prefixed with a timestamp so runs are lexically sortable and never collide:
    \`\`\`bash
-   mkdir -p ./agents/counselors/[slug]
+   mkdir -p ./agents/counselors/$(date +%s%3N)-[slug]
    \`\`\`
+   For example: \`./agents/counselors/1770676882780-auth-flow-review\`
 
-3. **Write the prompt file** using the Write tool to \`./agents/counselors/[slug]/prompt.md\`:
+3. **Write the prompt file** using the Write tool to \`./agents/counselors/[timestamp]-[slug]/prompt.md\`:
 
 \`\`\`markdown
 # Review Request
