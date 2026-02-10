@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-02-10
+
 ### Changed
 - Agentic quickstart rewritten so agents don't refuse it as social engineering — user installs the CLI, agent only runs config commands with explicit purposes
 - Skill template uses second-precision UNIX timestamps instead of millisecond-precision (macOS `date` doesn't support `%N`)
 - README adds example prompts and a slash command example to the quickstart
+
 
 ## [0.3.3] - 2026-02-10
 
@@ -67,8 +70,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release workflow accepts leading `v` in version input
 
 
-[Unreleased]: https://github.com/aarondfrancis/counselors/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/aarondfrancis/counselors/compare/v0.3.4...HEAD
 [0.3.0]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.0
 [0.3.1]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.1
 [0.3.2]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.2
 [0.3.3]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.3
+[0.3.4]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.4
