@@ -74,11 +74,11 @@ Be selective — don't dump the entire codebase. Pick the most relevant code sec
    - "review the auth flow" → \`auth-flow-review\`
    - "is this migration safe" → \`migration-safety-review\`
 
-2. **Create the output directory** via Bash. The directory name MUST always be prefixed with a millisecond-precision UNIX timestamp so runs are lexically sortable and never collide:
+2. **Create the output directory** via Bash. The directory name MUST always be prefixed with a UNIX timestamp (seconds) so runs are lexically sortable and never collide:
    \`\`\`
    ./agents/counselors/TIMESTAMP-[slug]
    \`\`\`
-   For example: \`./agents/counselors/1770676882780-auth-flow-review\`
+   For example: \`./agents/counselors/1770676882-auth-flow-review\`
 
 3. **Write the prompt file** using the Write tool to \`./agents/counselors/TIMESTAMP-[slug]/prompt.md\`:
 
