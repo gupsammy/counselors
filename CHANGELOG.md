@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-02-10
+
 ### Added
 - Multi-agent parallel dispatch with configurable adapters (Claude, Codex, Gemini, Amp, Custom)
 - Project-level `.counselors.json` configuration with defaults overrides
@@ -34,4 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release script handles blank changelogs instead of failing
 - Release workflow accepts leading `v` in version input
 
-[Unreleased]: https://github.com/aarondfrancis/counselors/compare/v0.1.0...HEAD
+
+[Unreleased]: https://github.com/aarondfrancis/counselors/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.0
