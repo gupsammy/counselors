@@ -13,6 +13,8 @@ description: Get parallel second opinions from multiple AI coding agents. Use wh
 
 # Counselors — Multi-Agent Review Skill
 
+> **Note:** This is a reference skill template. Your agent system may use a different skill/command format. Adapt the structure and frontmatter below to match your system's conventions — the workflow and phases are what matter.
+
 Fan out a prompt to multiple AI coding agents in parallel and synthesize their responses.
 
 Arguments: $ARGUMENTS
