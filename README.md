@@ -204,7 +204,7 @@ Other differences:
 
 The real value shows up when models disagree. Here are cross-model disagreement tables from actual counselors runs, synthesized by the primary agent:
 
-**Tauri close-request handling** — _Claude Opus, Gemini Pro, Codex_
+**Topic: Tauri close-request handling** — _Claude Opus, Gemini Pro, Codex_
 
 | Topic | Claude Opus | Gemini Pro | Codex |
 |-------|-------------|------------|-------|
@@ -212,7 +212,9 @@ The real value shows up when models disagree. Here are cross-model disagreement 
 | `emit_to` reliability | Flags potential Tauri bug (#10182) where `emit_to` may broadcast anyway; wants fallback plan | Says raw `app.emit_to` may be needed if tauri-specta doesn't expose it | Says `emit_to` is correct |
 | "Stop All" semantics | Says keep it global (app-level menu = all processes) | No comment | Says command palette "stop all" is not ownership-aware |
 
-**Escape key / modal stacking** — _Codex, Gemini, Amp_
+---
+
+**Topic: Escape key / modal stacking** — _Codex, Gemini, Amp_
 
 | Approach | Codex | Gemini | Amp |
 |----------|-------|--------|-----|
@@ -220,7 +222,9 @@ The real value shows up when models disagree. Here are cross-model disagreement 
 | ESC dispatch | Each Modal keeps its own window listener but no-ops if not topmost | Same as Codex | One global dispatcher + handler registry; Modals don't add window listeners at all |
 | Complexity | Medium (add stack, check in Modal) | Low (swap Set→Array, check in Modal) | Higher (new escape stack, new hooks, new global dispatcher, store handler functions) |
 
-**Terminal drag-and-drop / image paste** — _Claude Opus, Gemini Pro, Codex_
+---
+
+**Topic: Terminal drag-and-drop / image paste** — _Claude Opus, Gemini Pro, Codex_
 
 All 4 agents agreed on these key points:
 
@@ -235,7 +239,9 @@ All 4 agents agreed on these key points:
 
 The synthesizing agent's assessment: Claude Opus and Codex are correct — ghostty-web's CanvasRenderer draws text cells only. Gemini appears to conflate native Ghostty (which does support Kitty graphics) with ghostty-web (which doesn't have rendering paths for it).
 
-**Rust detection module refactor** — _Claude, Gemini, Codex_
+---
+
+**Topic: Rust detection module refactor** — _Claude, Gemini, Codex_
 
 All 3 agents agreed:
 
@@ -246,7 +252,9 @@ All 3 agents agreed:
 
 Codex also found 2 bugs all agents acknowledged: dedup by name drops valid suggestions in polyglot repos, and Procfile orchestration skip is too broad.
 
-**ghostty-web 0.3.0 to 0.4.0 upgrade** — _Claude, Codex, Gemini_
+---
+
+**Topic: ghostty-web 0.3.0 to 0.4.0 upgrade** — _Claude, Codex, Gemini_
 
 | Question | Consensus |
 |----------|-----------|
