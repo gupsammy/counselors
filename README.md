@@ -19,7 +19,7 @@ npm install -g counselors
 Then paste this to your AI coding agent:
 
 ```
-Run `counselors init --auto` to discover installed AI CLIs and write a config to ~/.config/counselors/config.json. Then run `counselors skill`, read its output, and save it as a Claude Code skill file at ~/.claude/skills/counselors/SKILL.md.
+Run `counselors init --auto` to discover and configure installed AI CLIs. Then run `counselors skill` to see how to create a skill for the counselors CLI.
 ```
 
 Your agent will configure available tools and set up the `/counselors` slash command.
