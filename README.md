@@ -4,6 +4,8 @@ Fan out prompts to multiple AI coding agents in parallel.
 
 `counselors` dispatches the same prompt to Claude, Codex, Gemini, Amp, or custom tools simultaneously, collects their responses, and writes everything to a structured output directory.
 
+No MCP servers, no API keys, no complex configuration. It just calls your locally installed CLI tools.
+
 ## Agentic quickstart
 
 Already inside an AI coding agent? Paste this prompt:
