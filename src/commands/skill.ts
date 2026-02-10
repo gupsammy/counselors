@@ -41,11 +41,11 @@ Be selective — don't dump the entire codebase. Pick the most relevant code sec
    \`\`\`bash
    counselors ls
    \`\`\`
-   This lists all configured agents with their IDs, models, and binaries.
+   This lists all configured agents with their IDs and binaries.
 
 2. **MANDATORY: Print the full agent list, then ask the user which to use.**
 
-   **Always print the full \`counselors ls\` output as inline text** (not inside AskUserQuestion). Just show the raw output from the command so the user sees every agent with its ID, binary, model, and read-only mode. Do NOT reformat or abbreviate it.
+   **Always print the full \`counselors ls\` output as inline text** (not inside AskUserQuestion). Just show the raw output from the command so the user sees every agent with its ID and binary. Do NOT reformat or abbreviate it.
 
    Then ask the user to pick:
 

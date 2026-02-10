@@ -18,7 +18,6 @@ import { safeWriteFile } from './fs-utils.js';
 
 export interface ProgressEvent {
   toolId: string;
-  model: string;
   event: 'started' | 'completed';
   report?: ToolReport;
 }
@@ -81,7 +80,6 @@ export async function dispatch(
     limit(async (): Promise<ToolReport> => {
       const toolConfig = config.tools[id];
       const adapter = resolveAdapter(id, toolConfig);
-      const model = toolConfig.defaultModel;
 
       const toolTimeout = toolConfig.timeout ?? config.defaults.timeout;
       const toolTimeoutMs = toolTimeout * 1000;
@@ -90,7 +88,6 @@ export async function dispatch(
         prompt: promptContent,
         promptFilePath,
         toolId: id,
-        model,
         outputDir,
         readOnlyPolicy,
         timeout: toolTimeout,
@@ -105,8 +102,8 @@ export async function dispatch(
       const isAmp = (toolConfig.adapter ?? id) === 'amp';
       const usageBefore = isAmp ? await captureAmpUsage() : null;
 
-      debug(`Dispatching ${id} with model ${model}`);
-      onProgress?.({ toolId: id, model, event: 'started' });
+      debug(`Dispatching ${id}`);
+      onProgress?.({ toolId: id, event: 'started' });
       const result = await execute(invocation, toolTimeoutMs);
 
       // Amp cost tracking: capture usage after
@@ -133,7 +130,6 @@ export async function dispatch(
 
       const report: ToolReport = {
         toolId: id,
-        model,
         status: result.timedOut
           ? 'timeout'
           : result.exitCode === 0
@@ -149,7 +145,7 @@ export async function dispatch(
         ...parsed,
       };
 
-      onProgress?.({ toolId: id, model, event: 'completed', report });
+      onProgress?.({ toolId: id, event: 'completed', report });
 
       return report;
     }),
@@ -161,7 +157,6 @@ export async function dispatch(
     if (r.status === 'fulfilled') return r.value;
     return {
       toolId: eligibleTools[i],
-      model: config.tools[eligibleTools[i]].defaultModel,
       status: 'error' as const,
       exitCode: 1,
       durationMs: 0,

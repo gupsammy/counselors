@@ -9,11 +9,11 @@ describe('CodexAdapter', () => {
     prompt: 'test prompt',
     promptFilePath: '/tmp/prompt.md',
     toolId: 'codex',
-    model: 'gpt-5.3-codex',
     outputDir: '/tmp/out',
     readOnlyPolicy: 'enforced',
     timeout: 540,
     cwd: '/tmp',
+    extraFlags: ['-m', 'gpt-5.3-codex', '-c', 'model_reasoning_effort=high'],
   };
 
   it('has correct metadata', () => {
@@ -53,27 +53,20 @@ describe('CodexAdapter', () => {
   });
 
   it('includes extraFlags in invocation', () => {
-    const req = {
-      ...baseRequest,
-      extraFlags: ['-c', 'model_reasoning_effort=xhigh'],
-    };
-    const inv = adapter.buildInvocation(req);
-    expect(inv.args).toContain('model_reasoning_effort=xhigh');
+    const inv = adapter.buildInvocation(baseRequest);
+    expect(inv.args).toContain('model_reasoning_effort=high');
   });
 
   it('omits extraFlags when not provided', () => {
-    const inv = adapter.buildInvocation(baseRequest);
+    const req = { ...baseRequest, extraFlags: undefined };
+    const inv = adapter.buildInvocation(req);
     expect(inv.args.filter((a) => a.includes('reasoning_effort'))).toHaveLength(
       0,
     );
   });
 
   it('places extraFlags before the instruction', () => {
-    const req = {
-      ...baseRequest,
-      extraFlags: ['-c', 'model_reasoning_effort=high'],
-    };
-    const inv = adapter.buildInvocation(req);
+    const inv = adapter.buildInvocation(baseRequest);
     const effortIdx = inv.args.indexOf('model_reasoning_effort=high');
     const instructionIdx = inv.args.findIndex((a) =>
       a.startsWith('Read the file'),

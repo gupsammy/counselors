@@ -73,12 +73,10 @@ export async function confirmOverwrite(toolId: string): Promise<boolean> {
   });
 }
 
-export async function selectRunTools(
-  tools: { id: string; model: string }[],
-): Promise<string[]> {
-  const choices = tools.map((t) => ({
-    name: `${t.id} (${t.model})`,
-    value: t.id,
+export async function selectRunTools(tools: string[]): Promise<string[]> {
+  const choices = tools.map((id) => ({
+    name: id,
+    value: id,
     checked: true,
   }));
 

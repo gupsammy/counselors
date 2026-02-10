@@ -25,7 +25,6 @@ export function registerListCommand(program: Command): void {
             prompt: '<prompt>',
             promptFilePath: '<prompt-file>',
             toolId: id,
-            model: t.defaultModel,
             outputDir: '.',
             readOnlyPolicy: t.readOnly.level,
             timeout: t.timeout ?? config.defaults.timeout,

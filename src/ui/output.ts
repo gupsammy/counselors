@@ -121,9 +121,7 @@ export function formatRunSummary(manifest: RunManifest): string {
     const icon =
       r.status === 'success' ? '✓' : r.status === 'timeout' ? '⏱' : '✗';
     const duration = (r.durationMs / 1000).toFixed(1);
-    lines.push(
-      `  ${icon} ${r.toolId} (${r.model}) — ${r.wordCount} words, ${duration}s`,
-    );
+    lines.push(`  ${icon} ${r.toolId} — ${r.wordCount} words, ${duration}s`);
     if (r.cost) {
       lines.push(`    Cost: $${r.cost.cost_usd.toFixed(2)} (${r.cost.source})`);
     }
@@ -141,11 +139,11 @@ export function formatRunSummary(manifest: RunManifest): string {
 }
 
 export function formatDryRun(
-  invocations: { toolId: string; model: string; cmd: string; args: string[] }[],
+  invocations: { toolId: string; cmd: string; args: string[] }[],
 ): string {
   const lines: string[] = ['', 'Dry run — would dispatch:', ''];
   for (const inv of invocations) {
-    lines.push(`  ${inv.toolId} (${inv.model})`);
+    lines.push(`  ${inv.toolId}`);
     lines.push(`    $ ${inv.cmd} ${inv.args.join(' ')}`);
   }
   lines.push('');

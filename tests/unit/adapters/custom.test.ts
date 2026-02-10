@@ -4,10 +4,7 @@ import type { RunRequest, ToolConfig } from '../../../src/types.js';
 
 const baseConfig: ToolConfig = {
   binary: '/usr/local/bin/my-tool',
-  defaultModel: 'my-model',
   readOnly: { level: 'bestEffort' },
-  promptMode: 'argument',
-  modelFlag: '--model',
   custom: true,
 };
 
@@ -15,7 +12,6 @@ const baseReq: RunRequest = {
   prompt: 'test prompt',
   promptFilePath: '/tmp/prompt.md',
   toolId: 'my-tool',
-  model: 'my-model',
   outputDir: '/tmp/out',
   readOnlyPolicy: 'none',
   timeout: 60,
@@ -38,20 +34,12 @@ describe('CustomAdapter', () => {
     expect(inv.cmd).toBe('/usr/local/bin/my-tool');
   });
 
-  it('passes model flag and model', () => {
+  it('adds extraFlags from request', () => {
     const adapter = new CustomAdapter('my-tool', baseConfig);
-    const inv = adapter.buildInvocation(baseReq);
-    expect(inv.args).toContain('--model');
-    expect(inv.args).toContain('my-model');
-  });
-
-  it('adds exec flags when configured', () => {
-    const config: ToolConfig = {
-      ...baseConfig,
-      execFlags: ['--verbose', '--format=json'],
-    };
-    const adapter = new CustomAdapter('my-tool', config);
-    const inv = adapter.buildInvocation(baseReq);
+    const inv = adapter.buildInvocation({
+      ...baseReq,
+      extraFlags: ['--verbose', '--format=json'],
+    });
     expect(inv.args).toContain('--verbose');
     expect(inv.args).toContain('--format=json');
   });
@@ -71,22 +59,12 @@ describe('CustomAdapter', () => {
   });
 
   it('uses stdin mode when configured', () => {
-    const config: ToolConfig = { ...baseConfig, promptMode: 'stdin' };
+    const config: ToolConfig = { ...baseConfig, stdin: true };
     const adapter = new CustomAdapter('my-tool', config);
     const inv = adapter.buildInvocation(baseReq);
     expect(inv.stdin).toBe('test prompt');
     // Should not contain the instruction as an arg
     expect(inv.args.join(' ')).not.toContain('Read the file at');
-  });
-
-  it('skips model flag when modelFlag is empty', () => {
-    const config: ToolConfig = { ...baseConfig, modelFlag: '' };
-    const adapter = new CustomAdapter('my-tool', config);
-    const inv = adapter.buildInvocation(baseReq);
-    expect(inv.args).not.toContain('');
-    expect(inv.args).not.toContain('my-model');
-    // Should still have the prompt instruction
-    expect(inv.args.join(' ')).toContain('Read the file at');
   });
 
   it('uses argument mode by default', () => {

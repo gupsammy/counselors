@@ -4,26 +4,18 @@ import { z } from 'zod';
 
 export type ReadOnlyLevel = 'enforced' | 'bestEffort' | 'none';
 
-// ── Prompt delivery mode ──
-
-export type PromptMode = 'argument' | 'stdin';
-
 // ── Config schemas (zod) ──
 
 export const ToolConfigSchema = z.object({
   binary: z.string(),
-  defaultModel: z.string(),
-  models: z.array(z.string()).optional(),
   adapter: z.string().optional(),
   readOnly: z.object({
     level: z.enum(['enforced', 'bestEffort', 'none']),
     flags: z.array(z.string()).optional(),
   }),
-  execFlags: z.array(z.string()).optional(),
   extraFlags: z.array(z.string()).optional(),
   timeout: z.number().optional(),
-  promptMode: z.enum(['argument', 'stdin']).default('argument'),
-  modelFlag: z.string().default('--model'),
+  stdin: z.boolean().optional(),
   custom: z.boolean().optional(),
 });
 
@@ -53,7 +45,6 @@ export interface RunRequest {
   prompt: string;
   promptFilePath: string;
   toolId: string;
-  model: string;
   outputDir: string;
   readOnlyPolicy: ReadOnlyLevel;
   timeout: number;
@@ -90,7 +81,6 @@ export interface CostInfo {
 
 export interface ToolReport {
   toolId: string;
-  model: string;
   status: 'success' | 'error' | 'timeout' | 'skipped';
   exitCode: number;
   durationMs: number;

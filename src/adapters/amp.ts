@@ -16,12 +16,25 @@ export class AmpAdapter extends BaseAdapter {
   installUrl = 'https://ampcode.com';
   readOnly = { level: 'enforced' as const };
   models = [
-    { id: 'smart', name: 'Smart — Opus 4.6, most capable', recommended: true },
-    { id: 'deep', name: 'Deep — GPT-5.2 Codex, extended thinking' },
+    {
+      id: 'smart',
+      name: 'Smart — Opus 4.6, most capable',
+      recommended: true,
+      extraFlags: ['-m', 'smart'],
+    },
+    {
+      id: 'deep',
+      name: 'Deep — GPT-5.2 Codex, extended thinking',
+      extraFlags: ['-m', 'deep'],
+    },
   ];
 
   buildInvocation(req: RunRequest): Invocation {
-    const args = ['-m', req.model, '-x'];
+    const args = ['-x'];
+
+    if (req.extraFlags) {
+      args.push(...req.extraFlags);
+    }
 
     if (req.readOnlyPolicy !== 'none' && existsSync(AMP_SETTINGS_FILE)) {
       args.push('--settings-file', AMP_SETTINGS_FILE);

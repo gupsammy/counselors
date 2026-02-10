@@ -13,25 +13,30 @@ export class CodexAdapter extends BaseAdapter {
       compoundId: 'codex-5.3-high',
       name: 'GPT-5.3 Codex — high reasoning',
       recommended: true,
-      extraFlags: ['-c', 'model_reasoning_effort=high'],
+      extraFlags: ['-m', 'gpt-5.3-codex', '-c', 'model_reasoning_effort=high'],
     },
     {
       id: 'gpt-5.3-codex',
       compoundId: 'codex-5.3-xhigh',
       name: 'GPT-5.3 Codex — xhigh reasoning',
-      extraFlags: ['-c', 'model_reasoning_effort=xhigh'],
+      extraFlags: ['-m', 'gpt-5.3-codex', '-c', 'model_reasoning_effort=xhigh'],
     },
     {
       id: 'gpt-5.3-codex',
       compoundId: 'codex-5.3-medium',
       name: 'GPT-5.3 Codex — medium reasoning',
-      extraFlags: ['-c', 'model_reasoning_effort=medium'],
+      extraFlags: [
+        '-m',
+        'gpt-5.3-codex',
+        '-c',
+        'model_reasoning_effort=medium',
+      ],
     },
   ];
 
   buildInvocation(req: RunRequest): Invocation {
     const instruction = `Read the file at ${req.promptFilePath} and follow the instructions within it.`;
-    const args = ['exec', '-m', req.model];
+    const args = ['exec'];
 
     if (req.readOnlyPolicy !== 'none') {
       args.push('--sandbox', 'read-only');
@@ -39,7 +44,6 @@ export class CodexAdapter extends BaseAdapter {
 
     args.push('-c', 'web_search=live', '--skip-git-repo-check');
 
-    // Append any extra flags (e.g. reasoning effort)
     if (req.extraFlags) {
       args.push(...req.extraFlags);
     }

@@ -85,9 +85,7 @@ export function registerRunCommand(program: Command): void {
           process.stderr.isTTY &&
           toolIds.length > 1
         ) {
-          const selected = await selectRunTools(
-            toolIds.map((id) => ({ id, model: config.tools[id].defaultModel })),
-          );
+          const selected = await selectRunTools(toolIds);
           if (selected.length === 0) {
             error('No tools selected.');
             process.exitCode = 1;
@@ -200,16 +198,15 @@ export function registerRunCommand(program: Command): void {
               prompt: promptContent,
               promptFilePath: dryPromptFile,
               toolId: id,
-              model: toolConfig.defaultModel,
               outputDir: dryOutputDir,
               readOnlyPolicy,
               timeout: config.defaults.timeout,
               cwd,
               binary: toolConfig.binary,
+              extraFlags: toolConfig.extraFlags,
             });
             return {
               toolId: id,
-              model: toolConfig.defaultModel,
               cmd: inv.cmd,
               args: inv.args,
             };
@@ -231,13 +228,7 @@ export function registerRunCommand(program: Command): void {
         }
 
         // Dispatch
-        const display = new ProgressDisplay(
-          toolIds.map((id) => ({
-            toolId: id,
-            model: config.tools[id].defaultModel,
-          })),
-          outputDir,
-        );
+        const display = new ProgressDisplay(toolIds, outputDir);
 
         let reports: ToolReport[];
         try {

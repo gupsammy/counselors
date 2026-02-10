@@ -31,13 +31,13 @@ counselors run -t claude,codex "Review this error handling"
 
 ## Supported Tools
 
-| Tool | Adapter | Read-Only | Default Model | Install |
-|------|---------|-----------|---------------|---------|
-| Claude Code | `claude` | enforced | `opus` (Opus 4.6) | [docs](https://docs.anthropic.com/en/docs/claude-code) |
-| OpenAI Codex | `codex` | enforced | `codex-5.3-high` | [github](https://github.com/openai/codex) |
-| Gemini CLI | `gemini` | bestEffort | `gemini-3-pro-preview` | [github](https://github.com/google-gemini/gemini-cli) |
-| Amp CLI | `amp` | enforced | `smart` (Opus 4.6) | [ampcode.com](https://ampcode.com) |
-| Custom | user-defined | configurable | user-defined | — |
+| Tool | Adapter | Read-Only | Install |
+|------|---------|-----------|---------|
+| Claude Code | `claude` | enforced | [docs](https://docs.anthropic.com/en/docs/claude-code) |
+| OpenAI Codex | `codex` | enforced | [github](https://github.com/openai/codex) |
+| Gemini CLI | `gemini` | bestEffort | [github](https://github.com/google-gemini/gemini-cli) |
+| Amp CLI | `amp` | enforced | [ampcode.com](https://ampcode.com) |
+| Custom | user-defined | configurable | — |
 
 ## Commands
 
@@ -119,11 +119,9 @@ Print a `/counselors` slash-command template for use inside Claude Code or other
   "tools": {
     "claude": {
       "binary": "/usr/local/bin/claude",
-      "defaultModel": "opus",
       "adapter": "claude",
       "readOnly": { "level": "enforced" },
-      "promptMode": "argument",
-      "modelFlag": "--model"
+      "extraFlags": ["--model", "opus"]
     }
   }
 }

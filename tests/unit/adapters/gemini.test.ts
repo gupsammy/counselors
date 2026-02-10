@@ -9,11 +9,11 @@ describe('GeminiAdapter', () => {
     prompt: 'test prompt',
     promptFilePath: '/tmp/prompt.md',
     toolId: 'gemini',
-    model: 'gemini-3-pro-preview',
     outputDir: '/tmp/out',
     readOnlyPolicy: 'bestEffort',
     timeout: 540,
     cwd: '/tmp',
+    extraFlags: ['-m', 'gemini-3-pro-preview'],
   };
 
   it('has correct metadata', () => {

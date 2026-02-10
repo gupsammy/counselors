@@ -36,7 +36,6 @@ async function loadProgressDisplay() {
 function makeReport(overrides: Partial<ToolReport> = {}): ToolReport {
   return {
     toolId: 'test-tool',
-    model: 'test-model',
     status: 'success',
     exitCode: 0,
     durationMs: 5000,
@@ -50,66 +49,52 @@ function makeReport(overrides: Partial<ToolReport> = {}): ToolReport {
 describe('ProgressDisplay (non-TTY)', () => {
   it('prints output dir on construction', async () => {
     const ProgressDisplay = await loadProgressDisplay();
-    const display = new ProgressDisplay(
-      [{ toolId: 'claude', model: 'opus' }],
-      '/tmp/output',
-    );
+    const display = new ProgressDisplay(['claude'], '/tmp/output');
     display.stop();
     expect(stderrOutput).toContain('Output: /tmp/output');
   });
 
   it('prints started message', async () => {
     const ProgressDisplay = await loadProgressDisplay();
-    const display = new ProgressDisplay(
-      [{ toolId: 'claude', model: 'opus' }],
-      '/tmp/output',
-    );
+    const display = new ProgressDisplay(['claude'], '/tmp/output');
     display.start('claude');
     display.stop();
-    expect(stderrOutput).toContain('claude (opus) started');
+    expect(stderrOutput).toContain('claude started');
   });
 
   it('prints completed message with duration and word count', async () => {
     const ProgressDisplay = await loadProgressDisplay();
-    const display = new ProgressDisplay(
-      [{ toolId: 'claude', model: 'opus' }],
-      '/tmp/output',
-    );
+    const display = new ProgressDisplay(['claude'], '/tmp/output');
     display.start('claude');
     display.complete(
       'claude',
       makeReport({
         toolId: 'claude',
-        model: 'opus',
         durationMs: 12300,
         wordCount: 500,
       }),
     );
     display.stop();
-    expect(stderrOutput).toContain('✓ claude (opus) done');
+    expect(stderrOutput).toContain('✓ claude done');
     expect(stderrOutput).toContain('12.3s');
     expect(stderrOutput).toContain('500 words');
   });
 
   it('prints error line for failed tools', async () => {
     const ProgressDisplay = await loadProgressDisplay();
-    const display = new ProgressDisplay(
-      [{ toolId: 'gemini', model: 'pro' }],
-      '/tmp/output',
-    );
+    const display = new ProgressDisplay(['gemini'], '/tmp/output');
     display.start('gemini');
     display.complete(
       'gemini',
       makeReport({
         toolId: 'gemini',
-        model: 'pro',
         status: 'error',
         exitCode: 1,
         error: 'TypeError: Cannot read properties\nsome second line',
       }),
     );
     display.stop();
-    expect(stderrOutput).toContain('✗ gemini (pro) done');
+    expect(stderrOutput).toContain('✗ gemini done');
     expect(stderrOutput).toContain('└ TypeError: Cannot read properties');
     // Should only include first line of error
     expect(stderrOutput).not.toContain('some second line');
@@ -117,25 +102,16 @@ describe('ProgressDisplay (non-TTY)', () => {
 
   it('prints timeout icon for timed-out tools', async () => {
     const ProgressDisplay = await loadProgressDisplay();
-    const display = new ProgressDisplay(
-      [{ toolId: 'slow', model: 'big' }],
-      '/tmp/output',
-    );
+    const display = new ProgressDisplay(['slow'], '/tmp/output');
     display.start('slow');
-    display.complete(
-      'slow',
-      makeReport({ toolId: 'slow', model: 'big', status: 'timeout' }),
-    );
+    display.complete('slow', makeReport({ toolId: 'slow', status: 'timeout' }));
     display.stop();
-    expect(stderrOutput).toContain('⏱ slow (big) done');
+    expect(stderrOutput).toContain('⏱ slow done');
   });
 
   it('ignores unknown tool IDs', async () => {
     const ProgressDisplay = await loadProgressDisplay();
-    const display = new ProgressDisplay(
-      [{ toolId: 'claude', model: 'opus' }],
-      '/tmp/output',
-    );
+    const display = new ProgressDisplay(['claude'], '/tmp/output');
     // Should not throw
     display.start('nonexistent');
     display.complete('nonexistent', makeReport());
@@ -144,21 +120,15 @@ describe('ProgressDisplay (non-TTY)', () => {
 
   it('handles multiple tools', async () => {
     const ProgressDisplay = await loadProgressDisplay();
-    const display = new ProgressDisplay(
-      [
-        { toolId: 'claude', model: 'opus' },
-        { toolId: 'codex', model: 'gpt-5' },
-      ],
-      '/tmp/output',
-    );
+    const display = new ProgressDisplay(['claude', 'codex'], '/tmp/output');
     display.start('claude');
     display.start('codex');
-    display.complete('claude', makeReport({ toolId: 'claude', model: 'opus' }));
-    display.complete('codex', makeReport({ toolId: 'codex', model: 'gpt-5' }));
+    display.complete('claude', makeReport({ toolId: 'claude' }));
+    display.complete('codex', makeReport({ toolId: 'codex' }));
     display.stop();
-    expect(stderrOutput).toContain('claude (opus) started');
-    expect(stderrOutput).toContain('codex (gpt-5) started');
-    expect(stderrOutput).toContain('✓ claude (opus) done');
-    expect(stderrOutput).toContain('✓ codex (gpt-5) done');
+    expect(stderrOutput).toContain('claude started');
+    expect(stderrOutput).toContain('codex started');
+    expect(stderrOutput).toContain('✓ claude done');
+    expect(stderrOutput).toContain('✓ codex done');
   });
 });

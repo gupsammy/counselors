@@ -48,10 +48,7 @@ describe('dispatch', () => {
     const config = makeConfig({
       'my-custom': {
         binary: '/usr/bin/custom',
-        defaultModel: 'test',
         readOnly: { level: 'bestEffort' },
-        promptMode: 'argument',
-        modelFlag: '--model',
         custom: true,
       },
     });
@@ -73,10 +70,7 @@ describe('dispatch', () => {
     const config = makeConfig({
       '../evil': {
         binary: '/usr/bin/echo',
-        defaultModel: 'test',
         readOnly: { level: 'enforced' },
-        promptMode: 'argument',
-        modelFlag: '--model',
       },
     });
 
@@ -100,10 +94,7 @@ describe('dispatch', () => {
     const config = makeConfig({
       claude: {
         binary: '/usr/bin/claude',
-        defaultModel: 'opus',
         readOnly: { level: 'enforced' },
-        promptMode: 'argument',
-        modelFlag: '--model',
       },
     });
 
@@ -129,10 +120,7 @@ describe('dispatch', () => {
     const config = makeConfig({
       claude: {
         binary: '/usr/bin/claude',
-        defaultModel: 'opus',
         readOnly: { level: 'enforced' },
-        promptMode: 'argument',
-        modelFlag: '--model',
       },
     });
 
@@ -153,7 +141,6 @@ describe('dispatch', () => {
 
     expect(completedReport).not.toBeNull();
     expect(completedReport.toolId).toBe('claude');
-    expect(completedReport.model).toBe('opus');
     expect(completedReport.status).toBe('success');
   });
 
@@ -161,10 +148,7 @@ describe('dispatch', () => {
     const config = makeConfig({
       claude: {
         binary: '/usr/bin/claude',
-        defaultModel: 'opus',
         readOnly: { level: 'enforced' },
-        promptMode: 'argument',
-        modelFlag: '--model',
       },
     });
 
@@ -182,21 +166,43 @@ describe('dispatch', () => {
     expect(reports[0].status).toBe('success');
   });
 
+  it('passes extraFlags from tool config to adapter', async () => {
+    const { execute } = await import('../../src/core/executor.js');
+    const mockExecute = vi.mocked(execute);
+
+    const config = makeConfig({
+      'claude-opus': {
+        binary: '/usr/bin/claude',
+        readOnly: { level: 'enforced' },
+        adapter: 'claude',
+        extraFlags: ['--model', 'opus'],
+      },
+    });
+
+    await dispatch({
+      config,
+      toolIds: ['claude-opus'],
+      promptFilePath: '/tmp/prompt.md',
+      promptContent: 'test',
+      outputDir: testDir,
+      readOnlyPolicy: 'none',
+      cwd: process.cwd(),
+    });
+
+    const [invocation] = mockExecute.mock.calls.at(-1)!;
+    expect(invocation.args).toContain('--model');
+    expect(invocation.args).toContain('opus');
+  });
+
   it('filters tools by read-only policy', async () => {
     const config = makeConfig({
       claude: {
         binary: '/usr/bin/claude',
-        defaultModel: 'opus',
         readOnly: { level: 'enforced' },
-        promptMode: 'argument',
-        modelFlag: '--model',
       },
       gemini: {
         binary: '/usr/bin/gemini',
-        defaultModel: 'pro',
         readOnly: { level: 'bestEffort' },
-        promptMode: 'argument',
-        modelFlag: '-m',
       },
     });
 

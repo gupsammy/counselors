@@ -27,7 +27,7 @@ export function synthesize(manifest: RunManifest, outputDir: string): string {
           ? '⏱'
           : '✗';
     const duration = (report.durationMs / 1000).toFixed(1);
-    parts.push(`### ${icon} ${report.toolId} (${report.model})`);
+    parts.push(`### ${icon} ${report.toolId}`);
     parts.push('');
     parts.push(`- Status: ${report.status}`);
     parts.push(`- Duration: ${duration}s`);

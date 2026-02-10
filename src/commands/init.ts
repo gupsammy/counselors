@@ -17,24 +17,10 @@ function buildToolConfig(
   id: string,
   adapter: import('../types.js').ToolAdapter,
   binaryPath: string,
-  model: string,
 ) {
   return {
     binary: binaryPath,
-    defaultModel: model,
-    models: adapter.models.map((m) => m.id),
     readOnly: { level: adapter.readOnly.level },
-    promptMode: (id === 'amp' || id === 'gemini' ? 'stdin' : 'argument') as
-      | 'argument'
-      | 'stdin',
-    modelFlag:
-      id === 'codex'
-        ? '-m'
-        : id === 'gemini'
-          ? '-m'
-          : id === 'amp'
-            ? '-m'
-            : '--model',
     ...(id === 'gemini' || id === 'codex' ? { timeout: 900 } : {}),
   };
 }
@@ -82,7 +68,6 @@ export function registerInitCommand(program: Command): void {
           id: string;
           adapter: string;
           binary: string;
-          model: string;
           version: string | null;
         }[] = [];
         const notFound: string[] = [];
@@ -96,12 +81,7 @@ export function registerInitCommand(program: Command): void {
           for (const model of adapter.models) {
             const cid = model.compoundId ?? compoundId(adapter.id, model.id);
             const toolConfig = {
-              ...buildToolConfig(
-                adapter.id,
-                adapter,
-                discovery.path!,
-                model.id,
-              ),
+              ...buildToolConfig(adapter.id, adapter, discovery.path!),
               adapter: adapter.id,
               ...(model.extraFlags ? { extraFlags: model.extraFlags } : {}),
             };
@@ -110,7 +90,6 @@ export function registerInitCommand(program: Command): void {
               id: cid,
               adapter: adapter.id,
               binary: discovery.path!,
-              model: model.id,
               version: discovery.version,
             });
           }
@@ -195,7 +174,7 @@ export function registerInitCommand(program: Command): void {
         for (const model of models) {
           const cid = model.compoundId ?? compoundId(id, model.id);
           const toolConfig = {
-            ...buildToolConfig(id, d.adapter, d.discovery.path!, model.id),
+            ...buildToolConfig(id, d.adapter, d.discovery.path!),
             adapter: id,
             ...(model.extraFlags ? { extraFlags: model.extraFlags } : {}),
           };

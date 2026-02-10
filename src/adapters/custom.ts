@@ -28,14 +28,8 @@ export class CustomAdapter extends BaseAdapter {
   buildInvocation(req: RunRequest): Invocation {
     const args: string[] = [];
 
-    // Add exec flags
-    if (this.config.execFlags) {
-      args.push(...this.config.execFlags);
-    }
-
-    // Add model flag (if configured)
-    if (this.config.modelFlag) {
-      args.push(this.config.modelFlag, req.model);
+    if (req.extraFlags) {
+      args.push(...req.extraFlags);
     }
 
     // Add read-only flags if applicable
@@ -45,7 +39,7 @@ export class CustomAdapter extends BaseAdapter {
 
     const cmd = req.binary ?? this.config.binary;
 
-    if (this.config.promptMode === 'stdin') {
+    if (this.config.stdin === true) {
       return { cmd, args, stdin: req.prompt, cwd: req.cwd };
     }
 

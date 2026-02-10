@@ -12,14 +12,31 @@ export class GeminiAdapter extends BaseAdapter {
       id: 'gemini-3-pro-preview',
       name: 'Gemini 3 Pro Preview — latest',
       recommended: true,
+      extraFlags: ['-m', 'gemini-3-pro-preview'],
     },
-    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro — stable GA' },
-    { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash Preview — fast' },
-    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash — fast GA' },
+    {
+      id: 'gemini-2.5-pro',
+      name: 'Gemini 2.5 Pro — stable GA',
+      extraFlags: ['-m', 'gemini-2.5-pro'],
+    },
+    {
+      id: 'gemini-3-flash-preview',
+      name: 'Gemini 3 Flash Preview — fast',
+      extraFlags: ['-m', 'gemini-3-flash-preview'],
+    },
+    {
+      id: 'gemini-2.5-flash',
+      name: 'Gemini 2.5 Flash — fast GA',
+      extraFlags: ['-m', 'gemini-2.5-flash'],
+    },
   ];
 
   buildInvocation(req: RunRequest): Invocation {
-    const args = ['-p', '', '-m', req.model];
+    const args = ['-p', ''];
+
+    if (req.extraFlags) {
+      args.push(...req.extraFlags);
+    }
 
     if (req.readOnlyPolicy !== 'none') {
       args.push(

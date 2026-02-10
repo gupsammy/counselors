@@ -1,23 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { executeTest } from '../../src/core/executor.js';
 import type { ToolAdapter, ToolConfig } from '../../src/types.js';
-
-// Mock the execute function so executeTest doesn't spawn real processes
-vi.mock('../../src/core/executor.js', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../src/core/executor.js')>();
-  return {
-    ...actual,
-    execute: vi.fn().mockResolvedValue({
-      exitCode: 0,
-      stdout: 'OK',
-      stderr: '',
-      timedOut: false,
-      durationMs: 50,
-    }),
-  };
-});
-
-const { executeTest } = await import('../../src/core/executor.js');
 
 const fakeAdapter: ToolAdapter = {
   id: 'test-adapter',
@@ -35,10 +18,7 @@ const fakeAdapter: ToolAdapter = {
 
 const fakeToolConfig: ToolConfig = {
   binary: '/bin/echo',
-  defaultModel: 'model-1',
   readOnly: { level: 'none' },
-  promptMode: 'argument',
-  modelFlag: '--model',
 };
 
 describe('executeTest', () => {
@@ -60,5 +40,60 @@ describe('executeTest', () => {
     const result = await executeTest(fakeAdapter, fakeToolConfig);
     expect(result.passed).toBe(true);
     expect(result.error).toBeUndefined();
+  });
+
+  it('overrides stdin for stdin-based adapters', async () => {
+    // `cat` echoes stdin — if executeTest overrides stdin with the test
+    // prompt ("Reply with exactly: OK"), cat outputs it and the test passes.
+    const catAdapter: ToolAdapter = {
+      ...fakeAdapter,
+      id: 'stdin-test',
+      buildInvocation: (req) => ({
+        cmd: 'cat',
+        args: [],
+        stdin: 'this-should-be-overridden',
+        cwd: req.cwd,
+      }),
+    };
+
+    const result = await executeTest(catAdapter, fakeToolConfig);
+    expect(result.passed).toBe(true);
+    expect(result.output).toContain('OK');
+  });
+
+  it('replaces last arg for argument-based adapters', async () => {
+    // echo outputs its args — executeTest should replace the last arg
+    // with the test prompt, so echo outputs it (containing "OK").
+    const echoAdapter: ToolAdapter = {
+      ...fakeAdapter,
+      buildInvocation: (req) => ({
+        cmd: 'echo',
+        args: ['placeholder-to-be-replaced'],
+        cwd: req.cwd,
+      }),
+    };
+
+    const result = await executeTest(echoAdapter, fakeToolConfig);
+    expect(result.passed).toBe(true);
+    expect(result.output).toContain('Reply with exactly: OK');
+  });
+
+  it('passes extraFlags from toolConfig to adapter', async () => {
+    const configWithFlags: ToolConfig = {
+      ...fakeToolConfig,
+      extraFlags: ['--model', 'opus'],
+    };
+
+    let capturedReq: any;
+    const spyAdapter: ToolAdapter = {
+      ...fakeAdapter,
+      buildInvocation: (req) => {
+        capturedReq = req;
+        return { cmd: 'echo', args: ['OK'], cwd: req.cwd };
+      },
+    };
+
+    await executeTest(spyAdapter, configWithFlags);
+    expect(capturedReq.extraFlags).toEqual(['--model', 'opus']);
   });
 });

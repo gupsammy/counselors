@@ -10,7 +10,6 @@ type ToolStatus = 'pending' | 'running' | 'done';
 
 interface ToolState {
   toolId: string;
-  model: string;
   status: ToolStatus;
   startedAt?: number;
   report?: ToolReport;
@@ -25,18 +24,17 @@ export class ProgressDisplay {
   private lineCount = 0;
   private isTTY: boolean;
 
-  constructor(tools: { toolId: string; model: string }[], outputDir: string) {
+  constructor(toolIds: string[], outputDir: string) {
     this.isTTY = Boolean(process.stderr.isTTY);
     this.outputDir = outputDir;
     this.tools = new Map();
     this.order = [];
-    for (const t of tools) {
-      this.tools.set(t.toolId, {
-        toolId: t.toolId,
-        model: t.model,
+    for (const id of toolIds) {
+      this.tools.set(id, {
+        toolId: id,
         status: 'pending',
       });
-      this.order.push(t.toolId);
+      this.order.push(id);
     }
 
     if (this.isTTY) {
@@ -57,7 +55,7 @@ export class ProgressDisplay {
     tool.startedAt = Date.now();
 
     if (!this.isTTY) {
-      process.stderr.write(`  ▸ ${toolId} (${tool.model}) started\n`);
+      process.stderr.write(`  ▸ ${toolId} started\n`);
     }
   }
 
@@ -76,7 +74,7 @@ export class ProgressDisplay {
             ? '⏱'
             : '✗';
       process.stderr.write(
-        `  ${icon} ${toolId} (${tool.model}) done  ${duration}s  ${report.wordCount.toLocaleString()} words\n`,
+        `  ${icon} ${toolId} done  ${duration}s  ${report.wordCount.toLocaleString()} words\n`,
       );
       if (report.status !== 'success' && report.error) {
         process.stderr.write(
@@ -125,7 +123,7 @@ export class ProgressDisplay {
   }
 
   private formatLine(tool: ToolState): string {
-    const label = `${tool.toolId} (${tool.model})`;
+    const label = tool.toolId;
 
     switch (tool.status) {
       case 'pending': {

@@ -53,10 +53,7 @@ describe('loadConfig', () => {
       tools: {
         claude: {
           binary: '/usr/bin/claude',
-          defaultModel: 'opus',
           readOnly: { level: 'enforced' },
-          promptMode: 'argument',
-          modelFlag: '--model',
         },
       },
     };
@@ -125,10 +122,7 @@ describe('mergeConfigs', () => {
       tools: {
         claude: {
           binary: '/bin/claude',
-          defaultModel: 'opus',
           readOnly: { level: 'enforced' },
-          promptMode: 'argument',
-          modelFlag: '--model',
         },
       },
     };
@@ -154,10 +148,7 @@ describe('mergeConfigs', () => {
       tools: {
         claude: {
           binary: '/bin/claude',
-          defaultModel: 'opus',
           readOnly: { level: 'enforced' },
-          promptMode: 'argument',
-          modelFlag: '--model',
         },
       },
     };
@@ -216,10 +207,7 @@ describe('loadProjectConfig', () => {
         tools: {
           evil: {
             binary: '/tmp/evil',
-            defaultModel: 'x',
             readOnly: { level: 'none' },
-            promptMode: 'argument',
-            modelFlag: '--m',
           },
         },
       }),
@@ -263,6 +251,56 @@ describe('loadProjectConfig', () => {
   });
 });
 
+describe('schema strips removed fields', () => {
+  it('parses config with legacy fields (defaultModel, promptMode, modelFlag, models)', () => {
+    const legacyConfig = {
+      version: 1,
+      defaults: { timeout: 300 },
+      tools: {
+        claude: {
+          binary: '/usr/bin/claude',
+          defaultModel: 'opus',
+          models: ['opus', 'sonnet'],
+          readOnly: { level: 'enforced' },
+          promptMode: 'argument',
+          modelFlag: '--model',
+          extraFlags: ['--model', 'opus'],
+        },
+      },
+    };
+    writeFileSync(testConfigFile, JSON.stringify(legacyConfig));
+    const config = loadConfig(testConfigFile);
+    expect(config.tools.claude).toBeDefined();
+    expect(config.tools.claude.binary).toBe('/usr/bin/claude');
+    expect(config.tools.claude.extraFlags).toEqual(['--model', 'opus']);
+    // Legacy fields should be stripped by Zod
+    expect((config.tools.claude as any).defaultModel).toBeUndefined();
+    expect((config.tools.claude as any).models).toBeUndefined();
+    expect((config.tools.claude as any).promptMode).toBeUndefined();
+    expect((config.tools.claude as any).modelFlag).toBeUndefined();
+  });
+
+  it('parses config with legacy execFlags as unknown field', () => {
+    const legacyConfig = {
+      version: 1,
+      defaults: {},
+      tools: {
+        custom: {
+          binary: '/usr/bin/custom',
+          readOnly: { level: 'none' },
+          execFlags: ['--verbose'],
+          custom: true,
+        },
+      },
+    };
+    writeFileSync(testConfigFile, JSON.stringify(legacyConfig));
+    const config = loadConfig(testConfigFile);
+    expect(config.tools.custom).toBeDefined();
+    // execFlags is no longer in the schema, should be stripped
+    expect((config.tools.custom as any).execFlags).toBeUndefined();
+  });
+});
+
 describe('addToolToConfig / removeToolFromConfig', () => {
   it('adds and removes tools', () => {
     let config: Config = {
@@ -279,10 +317,7 @@ describe('addToolToConfig / removeToolFromConfig', () => {
 
     const tool: ToolConfig = {
       binary: '/bin/test',
-      defaultModel: 'model1',
       readOnly: { level: 'none' },
-      promptMode: 'argument',
-      modelFlag: '--model',
     };
 
     config = addToolToConfig(config, 'test-tool', tool);
@@ -298,10 +333,7 @@ describe('addToolToConfig / removeToolFromConfig', () => {
 describe('renameToolInConfig', () => {
   const baseTool: ToolConfig = {
     binary: '/bin/test',
-    defaultModel: 'opus',
     readOnly: { level: 'enforced' },
-    promptMode: 'argument',
-    modelFlag: '--model',
   };
 
   const baseConfig: Config = {

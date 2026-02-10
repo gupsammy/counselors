@@ -34,7 +34,6 @@ describe('synthesis', () => {
       tools: [
         {
           toolId: 'codex-5.3-xhigh',
-          model: '5.3-xhigh',
           status: 'success',
           exitCode: 0,
           durationMs: 1000,
@@ -68,7 +67,6 @@ describe('synthesis', () => {
       tools: [
         {
           toolId,
-          model: 'default',
           status: 'success',
           exitCode: 0,
           durationMs: 500,

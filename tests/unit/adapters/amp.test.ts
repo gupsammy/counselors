@@ -13,11 +13,11 @@ describe('AmpAdapter', () => {
     prompt: 'test prompt',
     promptFilePath: '/tmp/prompt.md',
     toolId: 'amp',
-    model: 'smart',
     outputDir: '/tmp/out',
     readOnlyPolicy: 'bestEffort',
     timeout: 540,
     cwd: '/tmp',
+    extraFlags: ['-m', 'smart'],
   };
 
   it('has correct metadata', () => {

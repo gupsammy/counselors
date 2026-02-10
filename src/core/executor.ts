@@ -210,15 +210,17 @@ export async function executeTest(
     prompt,
     promptFilePath: '',
     toolId: adapter.id,
-    model: toolConfig.defaultModel,
     outputDir: '',
     readOnlyPolicy: 'none',
     timeout: TEST_TIMEOUT / 1000,
     cwd: process.cwd(),
+    extraFlags: toolConfig.extraFlags,
   });
 
-  // Override: for test, we pass a simple prompt as argument or stdin
-  if (toolConfig.promptMode === 'stdin') {
+  // Override: for test, we pass a simple prompt as argument or stdin.
+  // Check invocation.stdin (set by the adapter) rather than config.stdin,
+  // so built-in stdin adapters (Amp, Gemini) are handled correctly.
+  if (invocation.stdin != null) {
     invocation.stdin = prompt;
     // Remove any --settings-file flags for test
     invocation.args = invocation.args.filter((a, i, arr) => {

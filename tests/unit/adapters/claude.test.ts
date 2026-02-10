@@ -9,11 +9,11 @@ describe('ClaudeAdapter', () => {
     prompt: 'test prompt',
     promptFilePath: '/tmp/prompt.md',
     toolId: 'claude',
-    model: 'opus',
     outputDir: '/tmp/out',
     readOnlyPolicy: 'enforced',
     timeout: 540,
     cwd: '/tmp',
+    extraFlags: ['--model', 'opus'],
   };
 
   it('has correct metadata', () => {

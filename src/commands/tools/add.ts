@@ -14,6 +14,7 @@ import type { ReadOnlyLevel, ToolConfig } from '../../types.js';
 import { error, info, success, warn } from '../../ui/logger.js';
 import { createSpinner } from '../../ui/output.js';
 import {
+  confirmAction,
   confirmOverwrite,
   promptInput,
   promptSelect,
@@ -151,20 +152,7 @@ async function addBuiltInTool(
 
   const toolConfig: ToolConfig = {
     binary: discovery.path!,
-    defaultModel: selectedModel.id,
-    models: adapter.models.map((m) => m.id),
     readOnly: { level: adapter.readOnly.level },
-    promptMode: (toolId === 'amp' || toolId === 'gemini'
-      ? 'stdin'
-      : 'argument') as 'argument' | 'stdin',
-    modelFlag:
-      toolId === 'codex'
-        ? '-m'
-        : toolId === 'gemini'
-          ? '-m'
-          : toolId === 'amp'
-            ? '-m'
-            : '--model',
     adapter: toolId,
     ...(selectedModel.extraFlags
       ? { extraFlags: selectedModel.extraFlags }
@@ -193,16 +181,9 @@ async function collectCustomConfig(
     }
   }
 
-  // Prompt mode — ask first so we can guide the rest of the wizard
-  const promptMode = await promptSelect<'argument' | 'stdin'>(
-    'How does this tool receive prompts?',
-    [
-      { name: 'Stdin — pipe prompt text to stdin', value: 'stdin' },
-      {
-        name: 'Argument — prompt is passed as a CLI argument',
-        value: 'argument',
-      },
-    ],
+  // Prompt delivery — stdin or CLI argument
+  const useStdin = await confirmAction(
+    'Does this tool receive prompts via stdin?',
   );
 
   // Collect flags
@@ -214,7 +195,7 @@ async function collectCustomConfig(
   info('    2. Model selection if needed (e.g. --model gpt-4o)');
   info('    3. Output format if needed (e.g. --output-format text)');
   info('');
-  if (promptMode === 'argument') {
+  if (!useStdin) {
     info('  Counselors will append the prompt as the last CLI argument:');
     info(
       '    "Read the file at <path> and follow the instructions within it."',
@@ -225,10 +206,10 @@ async function collectCustomConfig(
   info('');
   info('  Example: -p --model gpt-4o --output-format text');
   info('');
-  let execFlags: string[] | undefined;
+  let extraFlags: string[] | undefined;
   const flagsInput = await promptInput('Flags (space-separated):');
   if (flagsInput.trim()) {
-    execFlags = flagsInput.trim().split(/\s+/);
+    extraFlags = flagsInput.trim().split(/\s+/);
   }
 
   const readOnlyLevel = await promptSelect<ReadOnlyLevel>(
@@ -268,8 +249,8 @@ async function collectCustomConfig(
   info('');
   info('  Tool will be invoked as:');
   const previewArgs = [
-    ...(execFlags ?? []),
-    promptMode === 'stdin'
+    ...(extraFlags ?? []),
+    useStdin
       ? '< prompt.md'
       : '"Read the file at <path> and follow the instructions..."',
   ];
@@ -294,11 +275,9 @@ async function collectCustomConfig(
       }
       const toolConfig: ToolConfig = {
         binary: binaryPath,
-        defaultModel: 'default',
         readOnly: { level: readOnlyLevel },
-        promptMode,
-        modelFlag: '',
-        execFlags,
+        ...(useStdin ? { stdin: true } : {}),
+        extraFlags,
         custom: true,
       };
       const updated = addToolToConfig(config, newId, toolConfig);
@@ -310,11 +289,9 @@ async function collectCustomConfig(
 
   const toolConfig: ToolConfig = {
     binary: binaryPath,
-    defaultModel: 'default',
     readOnly: { level: readOnlyLevel },
-    promptMode,
-    modelFlag: '',
-    execFlags,
+    ...(useStdin ? { stdin: true } : {}),
+    extraFlags,
     custom: true,
   };
 
