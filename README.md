@@ -10,13 +10,19 @@ No MCP servers, no API keys, no complex configuration. It just calls your locall
 
 ## Agentic quickstart
 
-Already inside an AI coding agent? Paste this prompt:
+Install the CLI yourself first:
+
+```bash
+npm install -g counselors
+```
+
+Then paste this to your AI coding agent:
 
 ```
-Install counselors globally with `npm install -g counselors`, then run `counselors agent` and follow the instructions it prints.
+Run `counselors init --auto` to discover installed AI CLIs and write a config to ~/.config/counselors/config.json. Then run `counselors skill`, read its output, and save it as a Claude Code skill file at ~/.claude/skills/counselors/SKILL.md.
 ```
 
-That's it. Your agent will install the CLI, configure available tools, and set up the `/counselors` slash command.
+Your agent will configure available tools and set up the `/counselors` slash command.
 
 **How it works:**
 
