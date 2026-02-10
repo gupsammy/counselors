@@ -8,7 +8,9 @@ Fan out prompts to multiple AI coding agents in parallel.
 
 Already inside an AI coding agent? Paste this prompt:
 
-> Install counselors globally with `npm install -g counselors`, then run `counselors agent` and follow the instructions it prints.
+```
+Install counselors globally with `npm install -g counselors`, then run `counselors agent` and follow the instructions it prints.
+```
 
 That's it. Your agent will install the CLI, configure available tools, and set up the `/counselors` slash command.
 
