@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-02-10
+
 ### Changed
 - `agent` command clarifies that `counselors skill` prints a reference template to adapt, not a file to blindly copy
 
 ### Fixed
 - Skill install path in `agent` command now points to `~/.claude/skills/` instead of `~/.claude/commands/`
+
 
 ## [0.3.0] - 2026-02-10
 
@@ -43,5 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release workflow accepts leading `v` in version input
 
 
-[Unreleased]: https://github.com/aarondfrancis/counselors/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/aarondfrancis/counselors/compare/v0.3.1...HEAD
 [0.3.0]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.0
+[0.3.1]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.1
