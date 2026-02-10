@@ -1,7 +1,11 @@
 import { existsSync } from 'node:fs';
 import type { Command } from 'commander';
 import { resolveAdapter } from '../adapters/index.js';
-import { AMP_SETTINGS_FILE, CONFIG_FILE } from '../constants.js';
+import {
+  AMP_DEEP_SETTINGS_FILE,
+  AMP_SETTINGS_FILE,
+  CONFIG_FILE,
+} from '../constants.js';
 import { loadConfig } from '../core/config.js';
 import { findBinary, getBinaryVersion } from '../core/discovery.js';
 import type { DoctorCheck } from '../types.js';
@@ -104,7 +108,7 @@ export function registerDoctorCommand(program: Command): void {
         });
       }
 
-      // Check amp settings file if any amp-based tool is configured
+      // Check amp settings files if any amp-based tool is configured
       const hasAmp = Object.entries(config.tools).some(
         ([id, t]) => (t.adapter ?? id) === 'amp',
       );
@@ -120,6 +124,19 @@ export function registerDoctorCommand(program: Command): void {
             name: 'Amp settings file',
             status: 'warn',
             message: 'Not found. Amp read-only mode may not work.',
+          });
+        }
+        if (existsSync(AMP_DEEP_SETTINGS_FILE)) {
+          checks.push({
+            name: 'Amp deep settings file',
+            status: 'pass',
+            message: AMP_DEEP_SETTINGS_FILE,
+          });
+        } else {
+          checks.push({
+            name: 'Amp deep settings file',
+            status: 'warn',
+            message: 'Not found. Amp deep mode may not work.',
           });
         }
       }

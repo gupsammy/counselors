@@ -199,7 +199,7 @@ Requires Node 20+. TypeScript with ESM, built with tsup, tested with vitest, lin
 
 ## Known Issues
 
-- **Amp `deep` model ignores `Read` tool when `read_web_page` is enabled** (Amp v0.0.1770317189). When the `amp-readonly-settings.json` whitelist includes both `Read` and `read_web_page`, the `deep` model (GPT-5.2 Codex) routes local file reads through `read_web_page` instead of `Read`, which fails on `file://` URLs. The `smart` model (Opus 4.6) is unaffected. Workaround: use `amp-smart` for tasks that require local file access, or remove `read_web_page` from `amp.tools.enable`.
+- **Amp `deep` model uses Bash to read files.** The `deep` model (GPT-5.2 Codex) reads files via `Bash` rather than the `Read` tool. Because `Bash` is a write-capable tool, we cannot guarantee that deep mode will not modify files. A mandatory read-only instruction is injected into the prompt, but this is a best-effort safeguard. For safety-critical tasks, prefer `amp-smart`.
 
 ## License
 

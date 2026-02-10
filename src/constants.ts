@@ -7,6 +7,10 @@ const xdgConfig = process.env.XDG_CONFIG_HOME || join(homedir(), '.config');
 export const CONFIG_DIR = join(xdgConfig, 'counselors');
 export const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
 export const AMP_SETTINGS_FILE = join(CONFIG_DIR, 'amp-readonly-settings.json');
+export const AMP_DEEP_SETTINGS_FILE = join(
+  CONFIG_DIR,
+  'amp-deep-settings.json',
+);
 
 // ── Default output ──
 

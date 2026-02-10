@@ -1,10 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { existsSync } from 'node:fs';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AmpAdapter,
   computeAmpCost,
   parseAmpUsage,
 } from '../../../src/adapters/amp.js';
 import type { RunRequest } from '../../../src/types.js';
+
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof import('node:fs')>('node:fs');
+  return { ...actual, existsSync: vi.fn(() => true) };
+});
 
 describe('AmpAdapter', () => {
   const adapter = new AmpAdapter();
@@ -19,6 +25,10 @@ describe('AmpAdapter', () => {
     cwd: '/tmp',
     extraFlags: ['-m', 'smart'],
   };
+
+  beforeEach(() => {
+    vi.mocked(existsSync).mockReturnValue(true);
+  });
 
   it('has correct metadata', () => {
     expect(adapter.id).toBe('amp');
@@ -45,6 +55,67 @@ describe('AmpAdapter', () => {
   it('falls back to "amp" when req.binary is undefined', () => {
     const inv = adapter.buildInvocation(baseRequest);
     expect(inv.cmd).toBe('amp');
+  });
+
+  it('uses deep settings file for deep model', () => {
+    const req = { ...baseRequest, extraFlags: ['-m', 'deep'] };
+    const inv = adapter.buildInvocation(req);
+    expect(inv.args).toContain('--settings-file');
+    const settingsIdx = inv.args.indexOf('--settings-file');
+    expect(inv.args[settingsIdx + 1]).toContain('amp-deep-settings.json');
+  });
+
+  it('injects read-only safety prompt for deep model', () => {
+    const req = { ...baseRequest, extraFlags: ['-m', 'deep'] };
+    const inv = adapter.buildInvocation(req);
+    expect(inv.stdin).toContain('MANDATORY: Do not change any files');
+    expect(inv.stdin).toContain('read-only mode');
+  });
+
+  it('uses standard settings file for smart model', () => {
+    const inv = adapter.buildInvocation(baseRequest);
+    expect(inv.args).toContain('--settings-file');
+    const settingsIdx = inv.args.indexOf('--settings-file');
+    expect(inv.args[settingsIdx + 1]).toContain('amp-readonly-settings.json');
+  });
+
+  it('does not inject safety prompt for smart model', () => {
+    const inv = adapter.buildInvocation(baseRequest);
+    expect(inv.stdin).not.toContain('MANDATORY: Do not change any files');
+  });
+
+  it('does not treat "deep" as deep mode when not preceded by -m', () => {
+    const req = { ...baseRequest, extraFlags: ['--something', 'deep'] };
+    const inv = adapter.buildInvocation(req);
+    expect(inv.stdin).not.toContain('MANDATORY: Do not change any files');
+    const settingsIdx = inv.args.indexOf('--settings-file');
+    expect(inv.args[settingsIdx + 1]).toContain('amp-readonly-settings.json');
+  });
+
+  it('skips settings file when readOnlyPolicy is none', () => {
+    const req = {
+      ...baseRequest,
+      readOnlyPolicy: 'none' as const,
+      extraFlags: ['-m', 'deep'],
+    };
+    const inv = adapter.buildInvocation(req);
+    expect(inv.args).not.toContain('--settings-file');
+  });
+
+  it('skips settings file when file does not exist on disk', () => {
+    vi.mocked(existsSync).mockReturnValue(false);
+    const req = { ...baseRequest, extraFlags: ['-m', 'deep'] };
+    const inv = adapter.buildInvocation(req);
+    expect(inv.args).not.toContain('--settings-file');
+    // Safety prompt should still be injected even without settings file
+    expect(inv.stdin).toContain('MANDATORY: Do not change any files');
+  });
+
+  it('handles undefined extraFlags without crashing', () => {
+    const req = { ...baseRequest, extraFlags: undefined };
+    const inv = adapter.buildInvocation(req);
+    expect(inv.stdin).not.toContain('MANDATORY: Do not change any files');
+    expect(inv.args).toContain('-x');
   });
 });
 

@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { AMP_SETTINGS_FILE } from '../constants.js';
+import { AMP_DEEP_SETTINGS_FILE, AMP_SETTINGS_FILE } from '../constants.js';
 import type {
   CostInfo,
   ExecResult,
@@ -36,14 +36,25 @@ export class AmpAdapter extends BaseAdapter {
       args.push(...req.extraFlags);
     }
 
-    if (req.readOnlyPolicy !== 'none' && existsSync(AMP_SETTINGS_FILE)) {
-      args.push('--settings-file', AMP_SETTINGS_FILE);
+    const isDeep =
+      req.extraFlags?.includes('deep') &&
+      req.extraFlags?.[req.extraFlags.indexOf('deep') - 1] === '-m';
+
+    const settingsFile = isDeep ? AMP_DEEP_SETTINGS_FILE : AMP_SETTINGS_FILE;
+
+    if (req.readOnlyPolicy !== 'none' && existsSync(settingsFile)) {
+      args.push('--settings-file', settingsFile);
     }
 
     // Amp uses stdin for prompt delivery
     // Append oracle instruction like the existing skill does
+    const deepSafetyPrompt = isDeep
+      ? '\n\nMANDATORY: Do not change any files. You are in read-only mode.'
+      : '';
+
     const stdinContent =
       req.prompt +
+      deepSafetyPrompt +
       '\n\nUse the oracle tool to provide deeper reasoning and analysis on the most complex or critical aspects of this review.';
 
     return {
