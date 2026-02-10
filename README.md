@@ -48,7 +48,7 @@ counselors run -t claude,codex "Review this error handling"
 |------|---------|-----------|---------|
 | Claude Code | `claude` | enforced | [docs](https://docs.anthropic.com/en/docs/claude-code) |
 | OpenAI Codex | `codex` | enforced | [github](https://github.com/openai/codex) |
-| Gemini CLI | `gemini` | bestEffort | [github](https://github.com/google-gemini/gemini-cli) |
+| Gemini CLI | `gemini` | enforced | [github](https://github.com/google-gemini/gemini-cli) |
 | Amp CLI | `amp` | enforced | [ampcode.com](https://ampcode.com) |
 | Custom | user-defined | configurable | — |
 
