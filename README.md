@@ -208,9 +208,7 @@ The real value shows up when models disagree. Here are cross-model disagreement 
 
 **Topic: Tauri close-request handling** — _Claude Opus, Gemini Pro, Codex_
 
-```
-/counselors Review my plan for handling Tauri 2.x close-request events — is the CloseRequested API usage correct, are there known emit_to bugs, and should "Stop All" be per-window or global?
-```
+> /counselors Review my plan for handling Tauri 2.x close-request events — is the CloseRequested API usage correct, are there known emit_to bugs, and should "Stop All" be per-window or global?
 
 | Topic | Claude Opus | Gemini Pro | Codex |
 |-------|-------------|------------|-------|
@@ -222,9 +220,7 @@ The real value shows up when models disagree. Here are cross-model disagreement 
 
 **Topic: Escape key / modal stacking** — _Codex, Gemini, Amp_
 
-```
-/counselors How should I implement escape-to-dismiss for stacked modals? Currently openModals is a Set and Escape closes everything. I want it to dismiss only the topmost modal.
-```
+> /counselors How should I implement escape-to-dismiss for stacked modals? Currently openModals is a Set and Escape closes everything. I want it to dismiss only the topmost modal.
 
 | Approach | Codex | Gemini | Amp |
 |----------|-------|--------|-----|
@@ -236,9 +232,7 @@ The real value shows up when models disagree. Here are cross-model disagreement 
 
 **Topic: Terminal drag-and-drop / image paste** — _Claude Opus, Gemini Pro, Codex_
 
-```
-/counselors What's the best approach for drag-and-drop files and image paste in my ghostty-web terminal? Is inline image rendering feasible on the Canvas/WASM renderer or should I just insert file paths?
-```
+> /counselors What's the best approach for drag-and-drop files and image paste in my ghostty-web terminal? Is inline image rendering feasible on the Canvas/WASM renderer or should I just insert file paths?
 
 All 3 agents agreed on these key points:
 
@@ -257,9 +251,7 @@ The synthesizing agent's assessment: Claude Opus and Codex are correct — ghost
 
 **Topic: Rust detection module refactor** — _Claude, Gemini, Codex_
 
-```
-/counselors The detection module is ~1200 lines in one file with boolean fields on DetectionContext. How should I refactor it — module directory, lazy file checks, rule engine? Also check for bugs in dedup and orchestration-skip logic.
-```
+> /counselors The detection module is ~1200 lines in one file with boolean fields on DetectionContext. How should I refactor it — module directory, lazy file checks, rule engine? Also check for bugs in dedup and orchestration-skip logic.
 
 All 3 agents agreed:
 
@@ -274,9 +266,7 @@ Codex also found 2 bugs all agents acknowledged: dedup by name drops valid sugge
 
 **Topic: ghostty-web 0.3.0 to 0.4.0 upgrade** — _Claude, Codex, Gemini_
 
-```
-/counselors Review my ghostty-web 0.3.0 → 0.4.0 upgrade plan. Key concerns: getLine() WASM bug, DSR response handling, isComposing guard for CJK, phase ordering, and renderer.metrics hack risk.
-```
+> /counselors Review my ghostty-web 0.3.0 → 0.4.0 upgrade plan. Key concerns: getLine() WASM bug, DSR response handling, isComposing guard for CJK, phase ordering, and renderer.metrics hack risk.
 
 | Question | Consensus |
 |----------|-----------|
