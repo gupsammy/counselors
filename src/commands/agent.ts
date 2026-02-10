@@ -18,19 +18,19 @@ Requires Node 20+.
 
 ## 2. Configure tools
 
-Run the interactive setup to discover and configure AI coding agents on your system:
+Auto-discover and configure all installed AI coding agents:
 
 \`\`\`bash
-counselors init
+counselors init --auto
 \`\`\`
 
-This detects installed agents (Claude, Codex, Gemini, Amp) and writes your config to \`~/.config/counselors/config.json\`.
+This detects installed agents (Claude, Codex, Gemini, Amp), configures them with recommended models, and writes your config to \`~/.config/counselors/config.json\`. The output is JSON listing what was configured.
 
 You can also manage tools individually:
 
 \`\`\`bash
 counselors tools discover   # Find available agents
-counselors tools add        # Add a tool interactively
+counselors tools add        # Add a tool (interactive)
 counselors tools remove <id>  # Remove a tool
 counselors tools rename <old> <new>  # Rename a tool
 counselors ls               # List configured tools

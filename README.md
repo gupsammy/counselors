@@ -4,6 +4,14 @@ Fan out prompts to multiple AI coding agents in parallel.
 
 `counselors` dispatches the same prompt to Claude, Codex, Gemini, Amp, or custom tools simultaneously, collects their responses, and writes everything to a structured output directory.
 
+## Agentic Quick Start
+
+Already inside an AI coding agent? Paste this prompt:
+
+> Install counselors globally with `npm install -g counselors`, then run `counselors agent` and follow the instructions it prints.
+
+That's it. Your agent will install the CLI, configure available tools, and set up the `/counselors` slash command.
+
 ## Quick Start
 
 ```bash
@@ -47,7 +55,7 @@ counselors run --dry-run "Show plan"     # Preview without executing
 | `-f, --file <path>` | Use a prompt file (no wrapping) |
 | `-t, --tools <list>` | Comma-separated tool IDs |
 | `--context <paths>` | Gather context from paths (comma-separated, or `.` for git diff) |
-| `--read-only <level>` | `strict`, `best-effort` (default), `off` |
+| `--read-only <level>` | `strict`, `best-effort`, `off` (defaults to config `readOnly`) |
 | `--dry-run` | Show what would run without executing |
 | `--json` | Output manifest as JSON |
 | `-o, --output-dir <dir>` | Base output directory |
@@ -140,7 +148,7 @@ Place a `.counselors.json` in your project root to override `defaults` per-proje
 | `bestEffort` | Tool is asked to avoid writes but may not guarantee it |
 | `none` | Tool has full read/write access |
 
-The `--read-only` flag on `run` controls the policy: `strict` only dispatches to tools with `enforced` support, `best-effort` (default) uses whatever each tool supports, `off` disables read-only flags entirely.
+The `--read-only` flag on `run` controls the policy: `strict` only dispatches to tools with `enforced` support, `best-effort` uses whatever each tool supports, `off` disables read-only flags entirely. When omitted, falls back to the `readOnly` setting in your config defaults (which defaults to `bestEffort`).
 
 ## Output Structure
 
@@ -151,8 +159,8 @@ Each run creates a timestamped directory:
   prompt.md              # The dispatched prompt
   run.json               # Manifest with status, timing, costs
   summary.md             # Synthesized summary
-  {tool-id}.txt          # Each tool's response
-  {tool-id}.stderr.txt   # Each tool's stderr
+  {tool-id}.md           # Each tool's response
+  {tool-id}.stderr       # Each tool's stderr
 ```
 
 ## Skill / Slash Command
@@ -168,6 +176,26 @@ counselors agent
 ```
 
 The skill template provides a multi-phase workflow: gather context, select agents, assemble prompt, dispatch via `counselors run`, read results, and synthesize a combined answer.
+
+## Security
+
+- **Environment allowlisting**: Child processes only receive allowlisted environment variables (PATH, HOME, API keys, proxy settings, etc.) — no full `process.env` leak.
+- **Atomic config writes**: Config files are written atomically via temp+rename with `0o600` permissions.
+- **Tool name validation**: Tool IDs are validated against `[a-zA-Z0-9._-]` to prevent path traversal.
+- **No shell execution**: All child processes use `execFile`/`spawn` without `shell: true`.
+- **Project config isolation**: `.counselors.json` can only override `defaults`, never inject `tools`.
+
+## Development
+
+```bash
+npm install
+npm run build        # tsup → dist/cli.js
+npm run test         # vitest (unit + integration)
+npm run typecheck    # tsc --noEmit
+npm run lint         # biome check
+```
+
+Requires Node 20+. TypeScript with ESM, built with tsup, tested with vitest, linted with biome.
 
 ## Known Issues
 
