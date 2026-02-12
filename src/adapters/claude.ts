@@ -1,3 +1,4 @@
+import { sanitizePath } from '../constants.js';
 import type { Invocation, RunRequest } from '../types.js';
 import { BaseAdapter } from './base.js';
 
@@ -27,7 +28,7 @@ export class ClaudeAdapter extends BaseAdapter {
   ];
 
   buildInvocation(req: RunRequest): Invocation {
-    const instruction = `Read the file at ${req.promptFilePath} and follow the instructions within it.`;
+    const instruction = `Read the file at ${sanitizePath(req.promptFilePath)} and follow the instructions within it.`;
     const args = ['-p', '--output-format', 'text'];
 
     if (req.extraFlags) {

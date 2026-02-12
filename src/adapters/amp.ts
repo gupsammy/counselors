@@ -4,7 +4,9 @@ import type {
   CostInfo,
   ExecResult,
   Invocation,
+  ReadOnlyLevel,
   RunRequest,
+  ToolConfig,
   ToolReport,
 } from '../types.js';
 import { BaseAdapter } from './base.js';
@@ -28,6 +30,13 @@ export class AmpAdapter extends BaseAdapter {
       extraFlags: ['-m', 'deep'],
     },
   ];
+
+  getEffectiveReadOnlyLevel(toolConfig: ToolConfig): ReadOnlyLevel {
+    const flags = toolConfig.extraFlags;
+    const isDeep =
+      flags?.includes('deep') && flags[flags.indexOf('deep') - 1] === '-m';
+    return isDeep ? 'bestEffort' : this.readOnly.level;
+  }
 
   buildInvocation(req: RunRequest): Invocation {
     const args = ['-x'];

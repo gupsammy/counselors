@@ -4,6 +4,7 @@ import type {
   ReadOnlyLevel,
   RunRequest,
   ToolAdapter,
+  ToolConfig,
   ToolReport,
 } from '../types.js';
 
@@ -16,6 +17,10 @@ export abstract class BaseAdapter implements ToolAdapter {
   abstract models: { id: string; name: string; recommended?: boolean }[];
 
   abstract buildInvocation(req: RunRequest): Invocation;
+
+  getEffectiveReadOnlyLevel(_toolConfig: ToolConfig): ReadOnlyLevel {
+    return this.readOnly.level;
+  }
 
   parseResult(result: ExecResult): Partial<ToolReport> {
     return {

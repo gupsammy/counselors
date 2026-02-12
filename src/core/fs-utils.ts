@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { renameSync, unlinkSync, writeFileSync } from 'node:fs';
 
 /**
@@ -9,7 +10,7 @@ export function safeWriteFile(
   content: string,
   options?: { mode?: number },
 ): void {
-  const tmp = `${path}.tmp.${process.pid}`;
+  const tmp = `${path}.tmp.${randomUUID().slice(0, 8)}`;
   try {
     writeFileSync(tmp, content, { encoding: 'utf-8', mode: options?.mode });
     renameSync(tmp, path);

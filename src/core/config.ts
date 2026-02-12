@@ -2,8 +2,25 @@ import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { z } from 'zod';
 import { CONFIG_FILE, CONFIG_FILE_MODE } from '../constants.js';
-import { type Config, ConfigSchema, type ToolConfig } from '../types.js';
+import {
+  type Config,
+  ConfigSchema,
+  type ReadOnlyLevel,
+  type ToolConfig,
+} from '../types.js';
 import { safeWriteFile } from './fs-utils.js';
+
+/** Strictness ranking: higher = stricter. */
+const READ_ONLY_STRICTNESS: Record<ReadOnlyLevel, number> = {
+  none: 0,
+  bestEffort: 1,
+  enforced: 2,
+};
+
+/** Return the stricter of two read-only levels. */
+function stricterReadOnly(a: ReadOnlyLevel, b: ReadOnlyLevel): ReadOnlyLevel {
+  return READ_ONLY_STRICTNESS[a] >= READ_ONLY_STRICTNESS[b] ? a : b;
+}
 
 const DEFAULT_CONFIG: Config = {
   version: 1,
@@ -78,6 +95,12 @@ export function mergeConfigs(
   if (project) {
     if (project.defaults) {
       merged.defaults = { ...merged.defaults, ...project.defaults };
+      // Project configs cannot weaken the global read-only policy.
+      // Clamp to the stricter of global vs project.
+      merged.defaults.readOnly = stricterReadOnly(
+        global.defaults.readOnly,
+        merged.defaults.readOnly,
+      );
     }
     // Project configs can only override defaults, never inject tools.
   }

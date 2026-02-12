@@ -78,6 +78,13 @@ export function sanitizeId(id: string): string {
 /** Regex for validating tool names (letters, numbers, dots, hyphens, underscores). */
 export const SAFE_ID_RE = /^[a-zA-Z0-9._-]+$/;
 
+/** Strip control characters from a path to prevent prompt injection.
+ *  Preserves tab (0x09) but removes 0x00-0x08 and 0x0A-0x1F. */
+export function sanitizePath(p: string): string {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — we need to match and strip control chars
+  return p.replace(/[\x00-\x08\x0A-\x1F]/g, '');
+}
+
 // ── Version ──
 
 declare const __VERSION__: string;

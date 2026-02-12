@@ -228,7 +228,7 @@ describe('execute', () => {
     }
   });
 
-  it('passes NODE_OPTIONS through to child processes', async () => {
+  it('blocks NODE_OPTIONS from reaching child processes', async () => {
     process.env.NODE_OPTIONS = '--max-old-space-size=4096';
     try {
       const result = await execute(
@@ -243,7 +243,7 @@ describe('execute', () => {
         5000,
       );
 
-      expect(result.stdout).toBe('--max-old-space-size=4096');
+      expect(result.stdout).toBe('NOT_SET');
     } finally {
       delete process.env.NODE_OPTIONS;
     }

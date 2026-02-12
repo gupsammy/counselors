@@ -19,9 +19,24 @@ const MAX_OUTPUT_BYTES = 10 * 1024 * 1024; // 10MB
 
 const activeChildren = new Set<ChildProcess>();
 
+/** Kill an entire process group, falling back to just the child. */
+function killProcessGroup(child: ChildProcess, signal: NodeJS.Signals): void {
+  try {
+    if (child.pid) {
+      process.kill(-child.pid, signal);
+    }
+  } catch {
+    try {
+      child.kill(signal);
+    } catch {
+      /* already dead */
+    }
+  }
+}
+
 process.on('SIGINT', () => {
   for (const child of activeChildren) {
-    child.kill('SIGTERM');
+    killProcessGroup(child, 'SIGTERM');
   }
   // Give children a moment to exit, then force-exit
   setTimeout(() => process.exit(1), 2000);
@@ -56,8 +71,8 @@ const ENV_ALLOWLIST = [
   'http_proxy',
   'https_proxy',
   'no_proxy',
-  // Node runtime
-  'NODE_OPTIONS',
+  // NOTE: NODE_OPTIONS intentionally excluded — it allows injecting
+  // --require flags that execute arbitrary code in child processes.
 ] as const;
 
 function buildSafeEnv(extra?: Record<string, string>): Record<string, string> {
@@ -94,6 +109,7 @@ export function execute(
       cwd: invocation.cwd,
       env: buildSafeEnv(invocation.env),
       stdio: ['pipe', 'pipe', 'pipe'],
+      detached: true,
     });
 
     // Track active children for SIGINT cleanup
@@ -123,13 +139,13 @@ export function execute(
       child.stdin.end();
     }
 
-    // Timeout: SIGTERM first, SIGKILL after grace period
+    // Timeout: SIGTERM the process group first, SIGKILL after grace period
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill('SIGTERM');
+      killProcessGroup(child, 'SIGTERM');
       killTimer = setTimeout(() => {
         if (!killed) {
-          child.kill('SIGKILL');
+          killProcessGroup(child, 'SIGKILL');
         }
       }, KILL_GRACE_PERIOD);
     }, timeoutMs);

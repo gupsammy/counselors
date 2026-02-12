@@ -159,6 +159,59 @@ describe('mergeConfigs', () => {
     expect(Object.keys(merged.tools)).toEqual(['claude']);
   });
 
+  it('prevents project config from weakening global readOnly policy', () => {
+    const global: Config = {
+      version: 1,
+      defaults: {
+        timeout: 540,
+        outputDir: './agents/counselors',
+        readOnly: 'enforced',
+        maxContextKb: 50,
+        maxParallel: 4,
+      },
+      tools: {},
+    };
+    const project = { defaults: { readOnly: 'none' as const } };
+    const merged = mergeConfigs(global, project);
+    // Project tried to downgrade to none, but it should stay at enforced
+    expect(merged.defaults.readOnly).toBe('enforced');
+  });
+
+  it('allows project config to strengthen global readOnly policy', () => {
+    const global: Config = {
+      version: 1,
+      defaults: {
+        timeout: 540,
+        outputDir: './agents/counselors',
+        readOnly: 'bestEffort',
+        maxContextKb: 50,
+        maxParallel: 4,
+      },
+      tools: {},
+    };
+    const project = { defaults: { readOnly: 'enforced' as const } };
+    const merged = mergeConfigs(global, project);
+    // Project strengthened to enforced — should be allowed
+    expect(merged.defaults.readOnly).toBe('enforced');
+  });
+
+  it('CLI flags can still override readOnly (explicit user intent)', () => {
+    const global: Config = {
+      version: 1,
+      defaults: {
+        timeout: 540,
+        outputDir: './agents/counselors',
+        readOnly: 'enforced',
+        maxContextKb: 50,
+        maxParallel: 4,
+      },
+      tools: {},
+    };
+    const merged = mergeConfigs(global, null, { readOnly: 'none' });
+    // CLI flags represent explicit user intent, so they override everything
+    expect(merged.defaults.readOnly).toBe('none');
+  });
+
   it('applies CLI flags over everything', () => {
     const global: Config = {
       version: 1,

@@ -1,3 +1,4 @@
+import { sanitizePath } from '../constants.js';
 import type { Invocation, RunRequest } from '../types.js';
 import { BaseAdapter } from './base.js';
 
@@ -35,7 +36,7 @@ export class CodexAdapter extends BaseAdapter {
   ];
 
   buildInvocation(req: RunRequest): Invocation {
-    const instruction = `Read the file at ${req.promptFilePath} and follow the instructions within it.`;
+    const instruction = `Read the file at ${sanitizePath(req.promptFilePath)} and follow the instructions within it.`;
     const args = ['exec'];
 
     if (req.readOnlyPolicy !== 'none') {

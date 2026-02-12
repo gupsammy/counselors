@@ -108,6 +108,9 @@ export interface ToolAdapter {
   }[];
   buildInvocation(req: RunRequest): Invocation;
   parseResult?(result: ExecResult): Partial<ToolReport>;
+  /** Return the effective read-only level for a specific tool configuration.
+   *  Adapters override this when certain models have weaker enforcement. */
+  getEffectiveReadOnlyLevel?(toolConfig: ToolConfig): ReadOnlyLevel;
 }
 
 // ── Discovery ──

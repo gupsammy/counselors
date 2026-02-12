@@ -61,9 +61,12 @@ export async function dispatch(
 
     if (readOnlyPolicy === 'enforced') {
       const adapter = resolveAdapter(id, toolConfig);
-      if (adapter.readOnly.level !== 'enforced') {
+      const effectiveLevel = adapter.getEffectiveReadOnlyLevel
+        ? adapter.getEffectiveReadOnlyLevel(toolConfig)
+        : adapter.readOnly.level;
+      if (effectiveLevel !== 'enforced') {
         warn(
-          `Skipping "${id}" — read-only level is "${adapter.readOnly.level}", policy requires "enforced".`,
+          `Skipping "${id}" — read-only level is "${effectiveLevel}", policy requires "enforced".`,
         );
         return false;
       }

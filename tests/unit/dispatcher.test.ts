@@ -219,4 +219,33 @@ describe('dispatch', () => {
 
     expect(reports).toHaveLength(2);
   });
+
+  it('skips amp-deep under enforced read-only policy', async () => {
+    const config = makeConfig({
+      'amp-deep': {
+        binary: '/usr/bin/amp',
+        adapter: 'amp',
+        readOnly: { level: 'enforced' },
+        extraFlags: ['-m', 'deep'],
+      },
+      claude: {
+        binary: '/usr/bin/claude',
+        readOnly: { level: 'enforced' },
+      },
+    });
+
+    const reports = await dispatch({
+      config,
+      toolIds: ['amp-deep', 'claude'],
+      promptFilePath: '/tmp/prompt.md',
+      promptContent: 'test',
+      outputDir: testDir,
+      readOnlyPolicy: 'enforced',
+      cwd: process.cwd(),
+    });
+
+    // amp-deep should be filtered out (bestEffort effective level)
+    expect(reports).toHaveLength(1);
+    expect(reports[0].toolId).toBe('claude');
+  });
 });

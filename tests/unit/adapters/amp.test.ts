@@ -117,6 +117,43 @@ describe('AmpAdapter', () => {
     expect(inv.stdin).not.toContain('MANDATORY: Do not change any files');
     expect(inv.args).toContain('-x');
   });
+
+  describe('getEffectiveReadOnlyLevel', () => {
+    it('returns enforced for smart model', () => {
+      const toolConfig = {
+        binary: 'amp',
+        readOnly: { level: 'enforced' as const },
+        extraFlags: ['-m', 'smart'],
+      };
+      expect(adapter.getEffectiveReadOnlyLevel(toolConfig)).toBe('enforced');
+    });
+
+    it('returns bestEffort for deep model', () => {
+      const toolConfig = {
+        binary: 'amp',
+        readOnly: { level: 'enforced' as const },
+        extraFlags: ['-m', 'deep'],
+      };
+      expect(adapter.getEffectiveReadOnlyLevel(toolConfig)).toBe('bestEffort');
+    });
+
+    it('returns enforced when no extraFlags', () => {
+      const toolConfig = {
+        binary: 'amp',
+        readOnly: { level: 'enforced' as const },
+      };
+      expect(adapter.getEffectiveReadOnlyLevel(toolConfig)).toBe('enforced');
+    });
+
+    it('returns enforced when deep is not preceded by -m', () => {
+      const toolConfig = {
+        binary: 'amp',
+        readOnly: { level: 'enforced' as const },
+        extraFlags: ['--something', 'deep'],
+      };
+      expect(adapter.getEffectiveReadOnlyLevel(toolConfig)).toBe('enforced');
+    });
+  });
 });
 
 describe('parseAmpUsage', () => {

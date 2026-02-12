@@ -1,3 +1,4 @@
+import { sanitizePath } from '../constants.js';
 import type {
   Invocation,
   ReadOnlyLevel,
@@ -43,7 +44,7 @@ export class CustomAdapter extends BaseAdapter {
       return { cmd, args, stdin: req.prompt, cwd: req.cwd };
     }
 
-    const instruction = `Read the file at ${req.promptFilePath} and follow the instructions within it.`;
+    const instruction = `Read the file at ${sanitizePath(req.promptFilePath)} and follow the instructions within it.`;
     args.push(instruction);
 
     return { cmd, args, cwd: req.cwd };
