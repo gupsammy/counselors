@@ -74,13 +74,15 @@ Be selective — don't dump the entire codebase. Pick the most relevant code sec
    - "review the auth flow" → \`auth-flow-review\`
    - "is this migration safe" → \`migration-safety-review\`
 
-2. **Create the output directory** via Bash. The directory name MUST always be prefixed with a UNIX timestamp (seconds) so runs are lexically sortable and never collide:
+2. **Create the output directory** via Bash inside \`agents/counselors/\` in your current working directory. The directory name MUST always be prefixed with a UNIX timestamp (seconds) so runs are lexically sortable and never collide:
    \`\`\`
-   ./agents/counselors/TIMESTAMP-[slug]
+   <cwd>/agents/counselors/TIMESTAMP-[slug]
    \`\`\`
-   For example: \`./agents/counselors/1770676882-auth-flow-review\`
+   For example, if your cwd is \`/Users/me/project\`: \`/Users/me/project/agents/counselors/1770676882-auth-flow-review\`
 
-3. **Write the prompt file** using the Write tool to \`./agents/counselors/TIMESTAMP-[slug]/prompt.md\`:
+3. **Write the prompt file** using the Write tool to the directory you just created — \`<cwd>/agents/counselors/TIMESTAMP-[slug]/prompt.md\`. Use an absolute path based on your current working directory, NOT a relative path.
+
+   **IMPORTANT:** Do NOT write the prompt file to \`/tmp\`, \`~/tmp\`, or any temporary directory outside the project. Counselor agents are sandboxed to the project directory and will not have access to files outside it. The file MUST be inside the \`agents/counselors/\` directory you just created.
 
 \`\`\`markdown
 # Review Request
@@ -112,10 +114,10 @@ You are providing an independent review. Be critical and thorough.
 
 ## Phase 4: Dispatch
 
-Run counselors via Bash with the prompt file, passing the user's selected agents:
+Run counselors via Bash with the prompt file (using the absolute path from Phase 3), passing the user's selected agents:
 
 \`\`\`bash
-counselors run -f ./agents/counselors/[slug]/prompt.md --tools [comma-separated-selections] --json
+counselors run -f <cwd>/agents/counselors/TIMESTAMP-[slug]/prompt.md --tools [comma-separated-selections] --json
 \`\`\`
 
 Example: \`--tools claude,codex,gemini\`
