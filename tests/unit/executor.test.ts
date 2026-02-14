@@ -1,3 +1,6 @@
+import { existsSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { execute } from '../../src/core/executor.js';
 
@@ -285,5 +288,49 @@ describe('execute', () => {
     // Should be capped near 10MB + truncation marker
     expect(result.stdout.length).toBeLessThan(11 * 1024 * 1024);
     expect(result.stdout).toContain('[output truncated at 10MB]');
+  });
+
+  it('kills process group on timeout so grandchildren do not outlive parent', async () => {
+    if (process.platform === 'win32') return;
+
+    const markerPath = join(
+      tmpdir(),
+      `counselors-orphan-${process.pid}-${Date.now()}.txt`,
+    );
+
+    const grandchildScript = `
+const fs = require('node:fs');
+setTimeout(() => {
+  fs.writeFileSync(${JSON.stringify(markerPath)}, 'orphan');
+  process.exit(0);
+}, 2000);
+setInterval(() => {}, 1000);
+`;
+
+    const parentScript = `
+const { spawn } = require('node:child_process');
+spawn(process.execPath, ['-e', ${JSON.stringify(grandchildScript)}], {
+  stdio: 'ignore',
+});
+setInterval(() => {}, 1000);
+`;
+
+    try {
+      const result = await execute(
+        {
+          cmd: 'node',
+          args: ['-e', parentScript],
+          cwd: process.cwd(),
+        },
+        300,
+      );
+
+      expect(result.timedOut).toBe(true);
+
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+      expect(existsSync(markerPath)).toBe(false);
+    } finally {
+      rmSync(markerPath, { force: true });
+    }
   });
 });
