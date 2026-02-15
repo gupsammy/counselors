@@ -246,10 +246,10 @@ The `--read-only` flag on `run` controls the policy: `strict` only dispatches to
 
 ## Output structure
 
-Each run creates a timestamped directory:
+Each run creates a directory under your configured output directory (`defaults.outputDir`, default `./agents/counselors`):
 
 ```
-./agents/counselors/{slug}/
+<outputDir>/{slug}/
   prompt.md              # The dispatched prompt
   run.json               # Manifest with status, timing, costs
   summary.md             # Synthesized summary

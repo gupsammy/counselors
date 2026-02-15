@@ -75,15 +75,16 @@ Be selective — don't dump the entire codebase. Pick the most relevant code sec
    - "review the auth flow" → \`auth-flow-review\`
    - "is this migration safe" → \`migration-safety-review\`
 
-2. **Create the output directory** via Bash inside \`agents/counselors/\` in your current working directory. The directory name MUST always be prefixed with a UNIX timestamp (seconds) so runs are lexically sortable and never collide:
+2. **Create the output directory** via Bash inside your project's counselors output directory (default: \`agents/counselors/\`) in your current working directory. The directory name MUST always be prefixed with a UNIX timestamp (seconds) so runs are lexically sortable and never collide:
    \`\`\`
-   <cwd>/agents/counselors/TIMESTAMP-[slug]
+   <cwd>/<outputDir>/TIMESTAMP-[slug]
    \`\`\`
+   By default, \`<outputDir>\` is \`agents/counselors\`, but users can customize it via config (\`defaults.outputDir\`) or the \`counselors run -o <dir>\` flag.
    For example, if your cwd is \`/Users/me/project\`: \`/Users/me/project/agents/counselors/1770676882-auth-flow-review\`
 
-3. **Write the prompt file** using the Write tool to the directory you just created — \`<cwd>/agents/counselors/TIMESTAMP-[slug]/prompt.md\`. Use an absolute path based on your current working directory, NOT a relative path.
+3. **Write the prompt file** using the Write tool to the directory you just created — \`<cwd>/<outputDir>/TIMESTAMP-[slug]/prompt.md\`. Use an absolute path based on your current working directory, NOT a relative path.
 
-   **IMPORTANT:** Do NOT write the prompt file to \`/tmp\`, \`~/tmp\`, or any temporary directory outside the project. Counselor agents are sandboxed to the project directory and will not have access to files outside it. The file MUST be inside the \`agents/counselors/\` directory you just created.
+   **IMPORTANT:** Do NOT write the prompt file to \`/tmp\`, \`~/tmp\`, or any temporary directory outside the project. Counselor agents are sandboxed to the project directory and will not have access to files outside it. The file MUST be inside the \`<outputDir>\` directory you just created.
 
 \`\`\`markdown
 # Review Request
@@ -118,7 +119,7 @@ You are providing an independent review. Be critical and thorough.
 Run counselors via Bash with the prompt file (using the absolute path from Phase 3), passing the user's selected agents:
 
 \`\`\`bash
-counselors run -f <cwd>/agents/counselors/TIMESTAMP-[slug]/prompt.md --tools [comma-separated-tool-ids] --json
+counselors run -f <cwd>/<outputDir>/TIMESTAMP-[slug]/prompt.md --tools [comma-separated-tool-ids] --json
 \`\`\`
 
 Examples:
