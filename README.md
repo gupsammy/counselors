@@ -107,6 +107,15 @@ Check configuration health — verifies config file, tool binaries, versions, an
 counselors doctor
 ```
 
+### `upgrade`
+
+Detect how `counselors` was installed and upgrade using the matching method when possible.
+
+```bash
+counselors upgrade
+counselors upgrade --check   # Show method/version only
+```
+
 ### `tools`
 
 Manage configured tools.

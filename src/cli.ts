@@ -10,6 +10,7 @@ import { registerListCommand } from './commands/tools/list.js';
 import { registerRemoveCommand } from './commands/tools/remove.js';
 import { registerRenameCommand } from './commands/tools/rename.js';
 import { registerTestCommand } from './commands/tools/test.js';
+import { registerUpgradeCommand } from './commands/upgrade.js';
 import { VERSION } from './constants.js';
 
 const program = new Command();
@@ -25,6 +26,7 @@ registerDoctorCommand(program);
 registerInitCommand(program);
 registerAgentCommand(program);
 registerSkillCommand(program);
+registerUpgradeCommand(program);
 
 // Tools subcommand group
 const tools = program
