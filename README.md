@@ -107,6 +107,24 @@ Check configuration health — verifies config file, tool binaries, versions, an
 counselors doctor
 ```
 
+### `upgrade`
+
+Detect how `counselors` was installed and upgrade using the matching method when possible.
+
+Supported:
+- Homebrew
+- npm global
+- pnpm global
+- yarn global (classic)
+- Standalone binary installs (safe paths only: `~/.local/bin`, `~/bin`)
+
+```bash
+counselors upgrade
+counselors upgrade --check        # Show method/version only
+counselors upgrade --dry-run      # Show what would run
+counselors upgrade --force        # Force standalone self-upgrade outside safe locations
+```
+
 ### `tools`
 
 Manage configured tools.

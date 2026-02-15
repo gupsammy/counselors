@@ -24,6 +24,7 @@ describe('CLI', () => {
     expect(output).toContain('run');
     expect(output).toContain('doctor');
     expect(output).toContain('init');
+    expect(output).toContain('upgrade');
     expect(output).toContain('tools');
   });
 
@@ -79,5 +80,16 @@ describe('CLI', () => {
       env: { XDG_CONFIG_HOME: '/tmp/counselors-test-nonexistent' },
     });
     expect(output).toContain('No tools configured');
+  });
+
+  it('upgrade --check reports install details', () => {
+    const output = run('upgrade --check');
+    expect(output).toContain('Install method');
+    expect(output).toContain('Running version');
+  });
+
+  it('upgrade --dry-run does not error', () => {
+    const output = run('upgrade --dry-run');
+    expect(output).toContain('Dry run');
   });
 });
