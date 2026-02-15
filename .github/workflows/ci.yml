@@ -23,7 +23,13 @@ jobs:
             node-version: 24
             test-command: npm run test
           - os: windows-latest
+            node-version: 20
+            test-command: npm run test -- tests/unit
+          - os: windows-latest
             node-version: 22
+            test-command: npm run test -- tests/unit
+          - os: windows-latest
+            node-version: 24
             test-command: npm run test -- tests/unit
 
     steps:
