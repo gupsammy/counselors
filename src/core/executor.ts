@@ -1,5 +1,5 @@
 import { type ChildProcess, execFileSync } from 'node:child_process';
-import { dirname, isAbsolute } from 'node:path';
+import { delimiter, dirname, isAbsolute } from 'node:path';
 import crossSpawn from 'cross-spawn';
 import stripAnsi from 'strip-ansi';
 import { computeAmpCost, parseAmpUsage } from '../adapters/amp.js';
@@ -151,8 +151,17 @@ export function execute(
     if (process.platform === 'win32' && isAbsolute(invocation.cmd)) {
       const binDir = dirname(invocation.cmd);
       const currentPath = env.PATH ?? env.Path ?? '';
-      if (!currentPath.split(';').includes(binDir)) {
-        env.PATH = `${binDir};${currentPath}`;
+      const parts = currentPath.split(delimiter).filter(Boolean);
+      const hasBinDir = parts.some(
+        (p) => p.toLowerCase() === binDir.toLowerCase(),
+      );
+
+      if (!hasBinDir) {
+        const nextPath = currentPath
+          ? `${binDir}${delimiter}${currentPath}`
+          : binDir;
+        env.PATH = nextPath;
+        if (env.Path != null) env.Path = nextPath;
       }
     }
 
