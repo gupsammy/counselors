@@ -1,1 +1,0 @@
-I will read the instructions from `./agents/second-opinions/codebase-review/prompt.md`.

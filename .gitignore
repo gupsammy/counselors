@@ -1,5 +1,5 @@
 node_modules/
 dist/
-agents/counselors/
+agents/
 *.tgz
 ogimage.txt
