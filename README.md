@@ -127,6 +127,16 @@ counselors upgrade --dry-run      # Show what would run
 counselors upgrade --force        # Force standalone self-upgrade outside safe locations
 ```
 
+### `cleanup`
+
+Delete run output directories older than a given age. Defaults to older than 1 day and uses your configured output directory (`defaults.outputDir`).
+
+```bash
+counselors cleanup
+counselors cleanup --dry-run --older-than 7d
+counselors cleanup --older-than 36h --yes
+```
+
 ### `tools`
 
 Manage configured tools.

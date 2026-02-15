@@ -1,9 +1,11 @@
 import { execSync } from 'node:child_process';
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
+  utimesSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -30,6 +32,7 @@ describe('CLI', () => {
     const output = run('--help');
     expect(output).toContain('counselors');
     expect(output).toContain('run');
+    expect(output).toContain('cleanup');
     expect(output).toContain('doctor');
     expect(output).toContain('init');
     expect(output).toContain('upgrade');
@@ -450,5 +453,52 @@ describe('CLI', () => {
   it('upgrade --dry-run does not error', () => {
     const output = run('upgrade --dry-run');
     expect(output).toContain('Dry run');
+  });
+
+  it('cleanup deletes old output directories by default (older than 1 day)', () => {
+    const xdg = mkdtempSync(join(tmpdir(), 'counselors-test-'));
+    try {
+      const configDir = join(xdg, 'counselors');
+      mkdirSync(configDir, { recursive: true });
+
+      const outDir = join(xdg, 'out');
+      mkdirSync(outDir, { recursive: true });
+
+      const oldRun = join(outDir, 'old-run');
+      const newRun = join(outDir, 'new-run');
+      mkdirSync(oldRun, { recursive: true });
+      mkdirSync(newRun, { recursive: true });
+
+      const now = Date.now();
+      const twoDaysAgo = new Date(now - 2 * 24 * 60 * 60 * 1000);
+      utimesSync(oldRun, twoDaysAgo, twoDaysAgo);
+
+      writeFileSync(
+        join(configDir, 'config.json'),
+        `${JSON.stringify(
+          {
+            version: 1,
+            defaults: {
+              timeout: 540,
+              outputDir: outDir,
+              readOnly: 'bestEffort',
+              maxContextKb: 50,
+              maxParallel: 4,
+            },
+            tools: {},
+            groups: {},
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      const output = run('cleanup --yes', { env: { XDG_CONFIG_HOME: xdg } });
+      expect(output).toContain('Deleted 1 directory');
+      expect(existsSync(oldRun)).toBe(false);
+      expect(existsSync(newRun)).toBe(true);
+    } finally {
+      rmSync(xdg, { recursive: true, force: true });
+    }
   });
 });
