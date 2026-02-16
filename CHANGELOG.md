@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `install.sh` now supports `COUNSELORS_VERSION` pinning and performs a more resilient latest-tag lookup (with optional `GITHUB_TOKEN` auth) to avoid transient GitHub API failures.
 - Release standalone smoke test now fetches `install.sh` from the release tag and runs it with `COUNSELORS_VERSION`, eliminating `main` drift and reducing flaky retries.
+- Release workflow now computes Homebrew's SHA256 from a locally packed npm tarball and publishes that exact tarball, avoiding npm registry propagation 404s during checksum resolution.
+- Binary discovery now includes `PATH` entries in stage-2 fallback scans, reducing Windows false negatives when `where` lookup times out.
 
 
 ## [0.4.3] - 2026-02-16

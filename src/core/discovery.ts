@@ -8,7 +8,7 @@ import {
   statSync,
 } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { delimiter, join } from 'node:path';
 import crossSpawn from 'cross-spawn';
 import {
   DISCOVERY_TIMEOUT,
@@ -87,14 +87,16 @@ export function findBinary(command: string): string | null {
 
   // Stage 2: extended path scan
   const searchPaths = [
+    ...getPathEntries(),
     ...getExtendedSearchPaths(),
     ...getNvmPaths(),
     ...getFnmPaths(),
   ];
+  const uniqueSearchPaths = [...new Set(searchPaths)];
   const accessMode =
     process.platform === 'win32' ? constants.F_OK : constants.X_OK;
 
-  for (const dir of searchPaths) {
+  for (const dir of uniqueSearchPaths) {
     for (const candidate of buildBinaryCandidatesForScan(dir, command)) {
       try {
         accessSync(candidate, accessMode);
@@ -106,6 +108,16 @@ export function findBinary(command: string): string | null {
   }
 
   return null;
+}
+
+/** Split PATH into normalized directories for stage-2 lookup fallback. */
+function getPathEntries(pathEnv = process.env.PATH): string[] {
+  if (!pathEnv) return [];
+
+  return pathEnv
+    .split(delimiter)
+    .map((entry) => entry.trim().replace(/^"(.*)"$/, '$1'))
+    .filter(Boolean);
 }
 
 /**

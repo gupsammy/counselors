@@ -113,33 +113,22 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Publish to npm
-        run: npm publish --provenance --access public
-
-      - name: Resolve npm tarball checksum
+      - name: Pack npm tarball and compute checksum
         id: tarball
         run: |
           set -euo pipefail
-          VERSION="${{ steps.version.outputs.number }}"
-          URL="https://registry.npmjs.org/counselors/-/counselors-${VERSION}.tgz"
-          TMP_TGZ="$(mktemp)"
+          PACK_OUTPUT_FILE="$(mktemp)"
+          npm pack --json > "$PACK_OUTPUT_FILE"
+          cat "$PACK_OUTPUT_FILE"
 
-          for attempt in {1..10}; do
-            if curl -fsSL "$URL" -o "$TMP_TGZ"; then
-              SHA256="$(sha256sum "$TMP_TGZ" | awk '{print $1}')"
-              if [[ "$SHA256" =~ ^[A-Fa-f0-9]{64}$ ]]; then
-                echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
-                exit 0
-              fi
-            fi
+          TARBALL="$(node -e "const fs = require('node:fs'); const data = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); if (!Array.isArray(data) || !data[0] || !data[0].filename) process.exit(1); process.stdout.write(data[0].filename);" "$PACK_OUTPUT_FILE")"
+          SHA256="$(sha256sum "$TARBALL" | awk '{print $1}')"
 
-            if [ "$attempt" -eq 10 ]; then
-              echo "Failed to download npm tarball checksum from: $URL"
-              exit 1
-            fi
+          echo "filename=$TARBALL" >> "$GITHUB_OUTPUT"
+          echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
 
-            sleep 6
-          done
+      - name: Publish to npm
+        run: npm publish --provenance --access public "${{ steps.tarball.outputs.filename }}"
 
   release-binaries:
     needs: release
