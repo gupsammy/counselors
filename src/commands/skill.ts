@@ -25,13 +25,13 @@ Arguments: $ARGUMENTS
 
 ## Phase 1: Context Gathering
 
-Parse \`$ARGUMENTS\` to understand what the user wants reviewed. Then auto-gather relevant context:
+Parse \`$ARGUMENTS\` to understand what the user wants reviewed. Then identify relevant context:
 
 1. **Files mentioned in the prompt**: Use Glob/Grep to find files referenced by name, class, function, or keyword
-2. **Recent changes**: Run \`git diff HEAD\` and \`git diff --staged\` to capture recent work
-3. **Related code**: Search for key terms from the prompt and read the most relevant files (up to 5 files, ~50KB total cap)
+2. **Recent changes**: Run \`git diff HEAD\` and \`git diff --staged\` to identify what changed
+3. **Related code**: Search for key terms from the prompt to identify the most relevant files (up to 5 files)
 
-Be selective — don't dump the entire codebase. Pick the most relevant code sections.
+**Important**: You do NOT need to read and inline every file. Subagents have access to the filesystem and git — they can read files and run git commands themselves. Your job is to *identify* the relevant files and reference them, not to copy their contents into the prompt. See Phase 3 for how to use \`@file\` references.
 
 ---
 
@@ -87,6 +87,10 @@ Be selective — don't dump the entire codebase. Pick the most relevant code sec
 
    **IMPORTANT:** Do NOT write the prompt file to \`/tmp\`, \`~/tmp\`, or any temporary directory outside the project. Counselor agents are sandboxed to the project directory and will not have access to files outside it. The file MUST be inside the \`<outputDir>\` directory you just created.
 
+   **Subagents can read files and use git.** You do NOT need to inline file contents or diff output into the prompt. Instead, use \`@path/to/file\` references to point subagents at the relevant files. They will read the files themselves. This keeps the prompt concise and avoids bloating it with copied code.
+
+   Only inline small, critical snippets if they're essential for framing the question (e.g. a specific function signature or error message). For everything else, use \`@file\` references.
+
 \`\`\`markdown
 # Review Request
 
@@ -95,17 +99,19 @@ Be selective — don't dump the entire codebase. Pick the most relevant code sec
 
 ## Context
 
-### Files Referenced
-[Contents of the most relevant files found in Phase 1]
+### Files to Review
+[List @path/to/file references for each relevant file found in Phase 1]
+[e.g. @src/core/executor.ts, @src/adapters/claude.ts]
 
 ### Recent Changes
-[git diff output, if any]
+[Brief description of what changed. If a diff is relevant, tell the agent to run \`git diff HEAD\` themselves, or inline only a small critical snippet]
 
 ### Related Code
-[Related files discovered via search]
+[@path/to/file references for related files discovered via search]
 
 ## Instructions
 You are providing an independent review. Be critical and thorough.
+- Read the referenced files to understand the full context
 - Analyze the question in the context provided
 - Identify risks, tradeoffs, and blind spots
 - Suggest alternatives if you see better approaches
