@@ -13,7 +13,7 @@ describe('GeminiAdapter', () => {
     readOnlyPolicy: 'bestEffort',
     timeout: 540,
     cwd: '/tmp',
-    extraFlags: ['-m', 'gemini-3-pro-preview'],
+    extraFlags: ['-m', 'gemini-3-pro'],
   };
 
   it('has correct metadata', () => {
@@ -27,7 +27,7 @@ describe('GeminiAdapter', () => {
     expect(inv.args[0]).toBe('-p');
     expect(inv.args[1]).toBe('');
     expect(inv.args).toContain('-m');
-    expect(inv.args).toContain('gemini-3-pro-preview');
+    expect(inv.args).toContain('gemini-3-pro');
     expect(inv.stdin).toBe('test prompt');
     expect(inv.args).toContain('--output-format');
     // No positional instruction arg

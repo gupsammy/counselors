@@ -182,8 +182,10 @@ Manage predefined groups of tool IDs for easier reuse.
 
 ```bash
 counselors groups list
-counselors groups add smart --tools claude-opus,codex-5.3-high
-counselors groups remove smart
+counselors groups add smart --tools claude-opus,codex-5.3-xhigh,gemini-3-pro
+counselors groups add fast --tools codex-5.3-high,gemini-3-flash
+counselors groups add opus-swarm --tools claude-opus,claude-opus,claude-opus
+counselors groups remove fast
 ```
 
 ### `agent`
@@ -219,7 +221,9 @@ Print a `/counselors` slash-command template for use inside Claude Code or other
     }
   },
   "groups": {
-    "smart": ["claude"]
+    "smart": ["claude-opus", "codex-5.3-xhigh", "gemini-3-pro"],
+    "fast": ["codex-5.3-high", "gemini-3-flash"],
+    "opus-swarm": ["claude-opus", "claude-opus", "claude-opus"]
   }
 }
 ```
