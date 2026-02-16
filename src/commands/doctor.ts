@@ -149,6 +149,25 @@ export function registerDoctorCommand(program: Command): void {
         }
       }
 
+      // Check groups reference valid tools
+      const groups = config.groups ?? {};
+      for (const [groupName, members] of Object.entries(groups)) {
+        const invalid = members.filter((m) => !config.tools[m]);
+        if (invalid.length > 0) {
+          checks.push({
+            name: `group "${groupName}"`,
+            status: 'fail',
+            message: `References missing tool(s): ${invalid.join(', ')}`,
+          });
+        } else {
+          checks.push({
+            name: `group "${groupName}"`,
+            status: 'pass',
+            message: `${members.length} tool(s)`,
+          });
+        }
+      }
+
       info(formatDoctorResults(checks));
 
       if (checks.some((c) => c.status === 'fail')) {

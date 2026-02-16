@@ -66,6 +66,50 @@ describe('CLI', () => {
     expect(output).toContain('Doctor results');
   });
 
+  it('doctor validates group references', () => {
+    const xdg = mkdtempSync(join(tmpdir(), 'counselors-test-'));
+    try {
+      const configDir = join(xdg, 'counselors');
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(
+        join(configDir, 'config.json'),
+        `${JSON.stringify(
+          {
+            version: 1,
+            defaults: {
+              timeout: 540,
+              outputDir: './agents/counselors',
+              readOnly: 'bestEffort',
+              maxContextKb: 50,
+              maxParallel: 4,
+            },
+            tools: {
+              claude: {
+                binary: '/usr/bin/claude',
+                adapter: 'claude',
+                readOnly: { level: 'enforced' },
+              },
+            },
+            groups: {
+              valid: ['claude'],
+              broken: ['claude', 'missing-tool'],
+            },
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      const output = run('doctor', { env: { XDG_CONFIG_HOME: xdg } });
+      expect(output).toContain('group "valid"');
+      expect(output).toContain('1 tool(s)');
+      expect(output).toContain('group "broken"');
+      expect(output).toContain('missing-tool');
+    } finally {
+      rmSync(xdg, { recursive: true, force: true });
+    }
+  });
+
   it('run with no tools configured shows error', () => {
     const output = run('run "test"', {
       env: { XDG_CONFIG_HOME: '/tmp/counselors-test-nonexistent' },
