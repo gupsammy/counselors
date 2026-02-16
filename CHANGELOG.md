@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.8] - 2026-02-16
+
 ### Added
 - `counselors doctor` now warns when multiple installations are detected (e.g. npm + Homebrew + standalone)
 
 ### Changed
 - `counselors tools test` now shows verbose failure details: timeout detection, stderr content, and actual tool output
+
 
 ## [0.4.7] - 2026-02-16
 
@@ -150,7 +153,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release workflow accepts leading `v` in version input
 
 
-[Unreleased]: https://github.com/aarondfrancis/counselors/compare/v0.4.7...HEAD
+[Unreleased]: https://github.com/aarondfrancis/counselors/compare/v0.4.8...HEAD
 [0.3.0]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.0
 [0.3.1]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.1
 [0.3.2]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.2
@@ -164,3 +167,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.4.5]: https://github.com/aarondfrancis/counselors/releases/tag/v0.4.5
 [0.4.6]: https://github.com/aarondfrancis/counselors/releases/tag/v0.4.6
 [0.4.7]: https://github.com/aarondfrancis/counselors/releases/tag/v0.4.7
+[0.4.8]: https://github.com/aarondfrancis/counselors/releases/tag/v0.4.8
