@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-02-16
+
 ### Fixed
 - `install.sh` now supports `COUNSELORS_VERSION` pinning and performs a more resilient latest-tag lookup (with optional `GITHUB_TOKEN` auth) to avoid transient GitHub API failures.
 - Release standalone smoke test now fetches `install.sh` from the release tag and runs it with `COUNSELORS_VERSION`, eliminating `main` drift and reducing flaky retries.
+
 
 ## [0.4.3] - 2026-02-16
 
@@ -117,7 +120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release workflow accepts leading `v` in version input
 
 
-[Unreleased]: https://github.com/aarondfrancis/counselors/compare/v0.4.3...HEAD
+[Unreleased]: https://github.com/aarondfrancis/counselors/compare/v0.4.4...HEAD
 [0.3.0]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.0
 [0.3.1]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.1
 [0.3.2]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.2
@@ -127,3 +130,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.4.1]: https://github.com/aarondfrancis/counselors/releases/tag/v0.4.1
 [0.4.2]: https://github.com/aarondfrancis/counselors/releases/tag/v0.4.2
 [0.4.3]: https://github.com/aarondfrancis/counselors/releases/tag/v0.4.3
+[0.4.4]: https://github.com/aarondfrancis/counselors/releases/tag/v0.4.4
