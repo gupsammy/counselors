@@ -1,5 +1,5 @@
 import { copyFileSync, readFileSync } from 'node:fs';
-import { basename, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve, sep } from 'node:path';
 import type { Command } from 'commander';
 import { isBuiltInTool, resolveAdapter } from '../adapters/index.js';
 import { loadConfig, loadProjectConfig, mergeConfigs } from '../core/config.js';
@@ -320,13 +320,30 @@ export function registerRunCommand(program: Command): void {
 
         // Resolve output directory (creates it)
         const baseDir = opts.outputDir || config.defaults.outputDir;
-        const outputDir = resolveOutputDir(baseDir, slug);
+        let outputDir: string;
+        let promptFilePath: string;
 
-        // Write prompt file
-        const promptFilePath = resolve(outputDir, 'prompt.md');
         if (opts.file) {
-          copyFileSync(resolve(cwd, opts.file), promptFilePath);
+          const absFile = resolve(cwd, opts.file);
+          const fileDir = dirname(absFile);
+          const resolvedBase = resolve(cwd, baseDir);
+
+          // If the prompt file already lives inside a subdir of baseDir,
+          // reuse that directory instead of creating a duplicate.
+          if (
+            fileDir.startsWith(resolvedBase + sep) &&
+            fileDir !== resolvedBase
+          ) {
+            outputDir = fileDir;
+            promptFilePath = absFile;
+          } else {
+            outputDir = resolveOutputDir(baseDir, slug);
+            promptFilePath = resolve(outputDir, 'prompt.md');
+            copyFileSync(absFile, promptFilePath);
+          }
         } else {
+          outputDir = resolveOutputDir(baseDir, slug);
+          promptFilePath = resolve(outputDir, 'prompt.md');
           safeWriteFile(promptFilePath, promptContent);
         }
 
