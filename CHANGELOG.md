@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Progress display shows child process PIDs and parent PID, with a timing note that sessions may take 10+ minutes — lets users verify processes are alive via `ps` or `tasklist`
+
 ## [0.4.10] - 2026-02-16
 
 ### Changed
