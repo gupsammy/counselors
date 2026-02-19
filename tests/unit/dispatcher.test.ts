@@ -6,12 +6,15 @@ import type { Config } from '../../src/types.js';
 
 // We test the dispatch function with a mock executor
 vi.mock('../../src/core/executor.js', () => ({
-  execute: vi.fn().mockResolvedValue({
-    exitCode: 0,
-    stdout: 'mock output',
-    stderr: '',
-    timedOut: false,
-    durationMs: 100,
+  execute: vi.fn().mockImplementation((_inv: any, _timeout: any, onSpawn?: (pid: number | undefined) => void) => {
+    onSpawn?.(12345);
+    return Promise.resolve({
+      exitCode: 0,
+      stdout: 'mock output',
+      stderr: '',
+      timedOut: false,
+      durationMs: 100,
+    });
   }),
   captureAmpUsage: vi.fn().mockResolvedValue(null),
   computeAmpCostFromSnapshots: vi.fn().mockReturnValue(null),
@@ -113,8 +116,34 @@ describe('dispatch', () => {
     });
 
     expect(events).toHaveLength(2);
-    expect(events[0]).toEqual({ toolId: 'claude', event: 'started' });
-    expect(events[1]).toEqual({ toolId: 'claude', event: 'completed' });
+    expect(events[0]).toMatchObject({ toolId: 'claude', event: 'started' });
+    expect(events[1]).toMatchObject({ toolId: 'claude', event: 'completed' });
+  });
+
+  it('includes pid in started progress event', async () => {
+    const config = makeConfig({
+      claude: {
+        binary: '/usr/bin/claude',
+        readOnly: { level: 'enforced' },
+      },
+    });
+
+    let startedPid: number | undefined;
+
+    await dispatch({
+      config,
+      toolIds: ['claude'],
+      promptFilePath: '/tmp/prompt.md',
+      promptContent: 'test',
+      outputDir: testDir,
+      readOnlyPolicy: 'none',
+      cwd: process.cwd(),
+      onProgress: (e) => {
+        if (e.event === 'started') startedPid = e.pid;
+      },
+    });
+
+    expect(startedPid).toBe(12345);
   });
 
   it('includes report in completed progress event', async () => {

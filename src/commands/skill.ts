@@ -138,6 +138,8 @@ Use \`timeout: 600000\` (10 minutes). Counselors dispatches to the selected agen
 
 **Important**: Use \`-f\` (file mode) so the prompt is sent as-is without wrapping. Use \`--json\` to get structured output for parsing.
 
+**Timing**: Sessions commonly take more than 10 minutes. Counselors prints each child process PID alongside the agent name in its progress output (e.g. \`PID 12345  claude\`). If a run seems stuck, you can verify processes are still alive with \`ps -p <PID>\` (macOS/Linux) or \`tasklist /FI "PID eq <PID>"\` (Windows).
+
 ---
 
 ## Phase 5: Read Results

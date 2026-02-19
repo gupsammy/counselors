@@ -118,6 +118,47 @@ describe('ProgressDisplay (non-TTY)', () => {
     display.stop();
   });
 
+  it('prints parent PID in header', async () => {
+    const ProgressDisplay = await loadProgressDisplay();
+    const display = new ProgressDisplay(['claude'], '/tmp/output');
+    display.stop();
+    expect(stderrOutput).toContain(`PID: ${process.pid}`);
+  });
+
+  it('omits PID prefix when no PID provided', async () => {
+    const ProgressDisplay = await loadProgressDisplay();
+    const display = new ProgressDisplay(['claude'], '/tmp/output');
+    display.start('claude');
+    display.stop();
+    expect(stderrOutput).toContain('▸ claude started');
+    expect(stderrOutput).not.toMatch(/PID \d+\s+claude started/);
+  });
+
+  it('prints child PID in started message', async () => {
+    const ProgressDisplay = await loadProgressDisplay();
+    const display = new ProgressDisplay(['claude'], '/tmp/output');
+    display.start('claude', 42);
+    display.stop();
+    expect(stderrOutput).toContain('PID 42');
+  });
+
+  it('prints info note on first start', async () => {
+    const ProgressDisplay = await loadProgressDisplay();
+    const display = new ProgressDisplay(['claude'], '/tmp/output');
+    display.stop();
+    expect(stderrOutput).toContain('This may take more than 10 minutes');
+  });
+
+  it('prints info note only once', async () => {
+    const ProgressDisplay = await loadProgressDisplay();
+    const display = new ProgressDisplay(['claude', 'codex'], '/tmp/output');
+    display.start('claude');
+    display.start('codex');
+    display.stop();
+    const matches = stderrOutput.match(/This may take more than 10 minutes/g);
+    expect(matches).toHaveLength(1);
+  });
+
   it('handles multiple tools', async () => {
     const ProgressDisplay = await loadProgressDisplay();
     const display = new ProgressDisplay(['claude', 'codex'], '/tmp/output');

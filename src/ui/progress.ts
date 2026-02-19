@@ -13,6 +13,7 @@ interface ToolState {
   status: ToolStatus;
   startedAt?: number;
   report?: ToolReport;
+  pid?: number;
 }
 
 export class ProgressDisplay {
@@ -23,6 +24,7 @@ export class ProgressDisplay {
   private frame = 0;
   private lineCount = 0;
   private isTTY: boolean;
+  private infoNotePrinted = false;
 
   constructor(toolIds: string[], outputDir: string) {
     this.isTTY = Boolean(process.stderr.isTTY);
@@ -45,17 +47,22 @@ export class ProgressDisplay {
       }, TICK_INTERVAL);
     } else {
       process.stderr.write(`  Output: ${this.outputDir}\n`);
+      process.stderr.write(`  ℹ This may take more than 10 minutes\n`);
+      process.stderr.write(`  PID: ${process.pid}\n`);
+      this.infoNotePrinted = true;
     }
   }
 
-  start(toolId: string): void {
+  start(toolId: string, pid?: number): void {
     const tool = this.tools.get(toolId);
     if (!tool) return;
     tool.status = 'running';
     tool.startedAt = Date.now();
+    tool.pid = pid;
 
     if (!this.isTTY) {
-      process.stderr.write(`  ▸ ${toolId} started\n`);
+      const pidStr = pid ? `PID ${pid}  ` : '';
+      process.stderr.write(`  ▸ ${pidStr}${toolId} started\n`);
     }
   }
 
@@ -97,6 +104,19 @@ export class ProgressDisplay {
   private render(): void {
     const lines: string[] = [];
     lines.push(`  ${DIM}Output: ${this.outputDir}${RESET}`);
+    if (!this.infoNotePrinted) {
+      // Check if any tool has started (meaning we have real work underway)
+      const anyStarted = this.order.some(
+        (id) => this.tools.get(id)!.status !== 'pending',
+      );
+      if (anyStarted) {
+        this.infoNotePrinted = true;
+      }
+    }
+    if (this.infoNotePrinted) {
+      lines.push(`  ℹ This may take more than 10 minutes`);
+      lines.push(`  PID: ${process.pid}`);
+    }
     for (const id of this.order) {
       const tool = this.tools.get(id)!;
       lines.push(this.formatLine(tool));
@@ -135,8 +155,10 @@ export class ProgressDisplay {
         const elapsed = tool.startedAt
           ? ((Date.now() - tool.startedAt) / 1000).toFixed(1)
           : '0.0';
-        const pad = ' '.repeat(Math.max(0, 40 - label.length));
-        return `  ${spinner} ${label}${pad}running  ${elapsed.padStart(6)}s`;
+        const pidPrefix = tool.pid ? `PID ${tool.pid}  ` : '';
+        const fullLabel = `${pidPrefix}${label}`;
+        const pad = ' '.repeat(Math.max(0, 40 - fullLabel.length));
+        return `  ${spinner} ${fullLabel}${pad}running  ${elapsed.padStart(6)}s`;
       }
       case 'done': {
         const r = tool.report!;

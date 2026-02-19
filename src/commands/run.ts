@@ -344,7 +344,7 @@ export function registerRunCommand(program: Command): void {
             readOnlyPolicy,
             cwd,
             onProgress: (event) => {
-              if (event.event === 'started') display.start(event.toolId);
+              if (event.event === 'started') display.start(event.toolId, event.pid);
               if (event.event === 'completed')
                 display.complete(event.toolId, event.report!);
             },

@@ -20,6 +20,7 @@ export interface ProgressEvent {
   toolId: string;
   event: 'started' | 'completed';
   report?: ToolReport;
+  pid?: number;
 }
 
 export interface DispatchOptions {
@@ -106,8 +107,9 @@ export async function dispatch(
       const usageBefore = isAmp ? await captureAmpUsage() : null;
 
       debug(`Dispatching ${id}`);
-      onProgress?.({ toolId: id, event: 'started' });
-      const result = await execute(invocation, toolTimeoutMs);
+      const result = await execute(invocation, toolTimeoutMs, (pid) => {
+        onProgress?.({ toolId: id, event: 'started', pid });
+      });
 
       // Amp cost tracking: capture usage after
       const usageAfter = isAmp ? await captureAmpUsage() : null;

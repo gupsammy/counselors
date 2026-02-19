@@ -139,6 +139,7 @@ function normalizeWindowsPathForComparison(path: string): string {
 export function execute(
   invocation: Invocation,
   timeoutMs: number,
+  onSpawn?: (pid: number | undefined) => void,
 ): Promise<ExecResult> {
   return new Promise((resolve) => {
     const start = Date.now();
@@ -193,6 +194,8 @@ export function execute(
       shell: false,
       windowsHide: true,
     });
+
+    onSpawn?.(child.pid);
 
     const stdoutStream = child.stdout;
     const stderrStream = child.stderr;

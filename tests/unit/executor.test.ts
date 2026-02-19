@@ -210,6 +210,41 @@ describe('execute', () => {
     }
   });
 
+  it('calls onSpawn callback with PID', async () => {
+    let spawnedPid: number | undefined;
+    await execute(
+      {
+        cmd: 'node',
+        args: ['-e', 'process.exit(0)'],
+        cwd: process.cwd(),
+      },
+      5000,
+      (pid) => {
+        spawnedPid = pid;
+      },
+    );
+
+    expect(spawnedPid).toBeTypeOf('number');
+    expect(spawnedPid).toBeGreaterThan(0);
+  });
+
+  it('calls onSpawn with undefined pid for missing binary', async () => {
+    let spawnedPid: number | undefined = 999;
+    await execute(
+      {
+        cmd: 'nonexistent-binary-xyz',
+        args: [],
+        cwd: process.cwd(),
+      },
+      5000,
+      (pid) => {
+        spawnedPid = pid;
+      },
+    );
+
+    expect(spawnedPid).toBeUndefined();
+  });
+
   it('handles missing binary', async () => {
     const result = await execute(
       {
