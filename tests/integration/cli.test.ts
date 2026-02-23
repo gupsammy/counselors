@@ -32,6 +32,7 @@ describe('CLI', () => {
     const output = run('--help');
     expect(output).toContain('counselors');
     expect(output).toContain('run');
+    expect(output).toContain('loop');
     expect(output).toContain('cleanup');
     expect(output).toContain('config');
     expect(output).toContain('doctor');
@@ -635,6 +636,293 @@ describe('CLI', () => {
         'Refusing to delete in non-interactive mode without --yes',
       );
       expect(existsSync(oldRun)).toBe(true);
+    } finally {
+      rmSync(xdg, { recursive: true, force: true });
+    }
+  });
+
+  // ── Loop command tests ──
+
+  it('loop --help shows loop-specific options', () => {
+    const output = run('loop --help');
+    expect(output).toContain('--rounds');
+    expect(output).toContain('--duration');
+    expect(output).toContain('--preset');
+    expect(output).toContain('--discovery-tool');
+    expect(output).toContain('--convergence-threshold');
+    expect(output).toContain('--file');
+    expect(output).toContain('--tools');
+    expect(output).toContain('--dry-run');
+    expect(output).toContain('Multi-round dispatch');
+  });
+
+  it('run --help does not show loop-specific options', () => {
+    const output = run('run --help');
+    expect(output).not.toContain('--rounds');
+    expect(output).not.toContain('--duration');
+    expect(output).not.toContain('--preset');
+    // But still has run-specific options
+    expect(output).toContain('--file');
+    expect(output).toContain('--tools');
+    expect(output).toContain('--dry-run');
+  });
+
+  it('loop with no tools configured shows error', () => {
+    const output = run('loop "test"', {
+      env: { XDG_CONFIG_HOME: '/tmp/counselors-test-nonexistent' },
+    });
+    expect(output).toContain('No tools configured');
+  });
+
+  it('loop --dry-run shows round plan info', () => {
+    const xdg = mkdtempSync(join(tmpdir(), 'counselors-test-'));
+    try {
+      const configDir = join(xdg, 'counselors');
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(
+        join(configDir, 'config.json'),
+        `${JSON.stringify(
+          {
+            version: 1,
+            defaults: {
+              timeout: 540,
+              outputDir: './agents/counselors',
+              readOnly: 'bestEffort',
+              maxContextKb: 50,
+              maxParallel: 4,
+            },
+            tools: {
+              claude: {
+                binary: '/usr/bin/claude',
+                adapter: 'claude',
+                readOnly: { level: 'enforced' },
+              },
+            },
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      const output = run('loop --dry-run -t claude "test prompt"', {
+        env: { XDG_CONFIG_HOME: xdg },
+      });
+
+      expect(output).toContain('claude');
+      expect(output).toContain('Rounds:');
+    } finally {
+      rmSync(xdg, { recursive: true, force: true });
+    }
+  });
+
+  it('loop --dry-run with --rounds shows custom round count', () => {
+    const xdg = mkdtempSync(join(tmpdir(), 'counselors-test-'));
+    try {
+      const configDir = join(xdg, 'counselors');
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(
+        join(configDir, 'config.json'),
+        `${JSON.stringify(
+          {
+            version: 1,
+            defaults: {
+              timeout: 540,
+              outputDir: './agents/counselors',
+              readOnly: 'bestEffort',
+              maxContextKb: 50,
+              maxParallel: 4,
+            },
+            tools: {
+              claude: {
+                binary: '/usr/bin/claude',
+                adapter: 'claude',
+                readOnly: { level: 'enforced' },
+              },
+            },
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      const output = run('loop --dry-run --rounds 7 -t claude "test prompt"', {
+        env: { XDG_CONFIG_HOME: xdg },
+      });
+
+      expect(output).toContain('Rounds: 7');
+    } finally {
+      rmSync(xdg, { recursive: true, force: true });
+    }
+  });
+
+  it('loop --dry-run with --duration shows unlimited rounds', () => {
+    const xdg = mkdtempSync(join(tmpdir(), 'counselors-test-'));
+    try {
+      const configDir = join(xdg, 'counselors');
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(
+        join(configDir, 'config.json'),
+        `${JSON.stringify(
+          {
+            version: 1,
+            defaults: {
+              timeout: 540,
+              outputDir: './agents/counselors',
+              readOnly: 'bestEffort',
+              maxContextKb: 50,
+              maxParallel: 4,
+            },
+            tools: {
+              claude: {
+                binary: '/usr/bin/claude',
+                adapter: 'claude',
+                readOnly: { level: 'enforced' },
+              },
+            },
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      const output = run(
+        'loop --dry-run --duration 30m -t claude "test prompt"',
+        { env: { XDG_CONFIG_HOME: xdg } },
+      );
+
+      expect(output).toContain('unlimited');
+      expect(output).toContain('30m');
+    } finally {
+      rmSync(xdg, { recursive: true, force: true });
+    }
+  });
+
+  it('loop --preset resolves the bug-hunt preset in dry-run', () => {
+    const xdg = mkdtempSync(join(tmpdir(), 'counselors-test-'));
+    try {
+      const configDir = join(xdg, 'counselors');
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(
+        join(configDir, 'config.json'),
+        `${JSON.stringify(
+          {
+            version: 1,
+            defaults: {
+              timeout: 540,
+              outputDir: './agents/counselors',
+              readOnly: 'bestEffort',
+              maxContextKb: 50,
+              maxParallel: 4,
+            },
+            tools: {
+              claude: {
+                binary: '/usr/bin/claude',
+                adapter: 'claude',
+                readOnly: { level: 'enforced' },
+              },
+            },
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      const output = run(
+        'loop --dry-run --preset bug-hunt "the billing module" -t claude',
+        { env: { XDG_CONFIG_HOME: xdg } },
+      );
+
+      // In dry-run mode, the preset is resolved and shown in the output
+      // without running the actual discovery and prompt-writing phases.
+      expect(output).toContain('Preset: bug-hunt');
+    } finally {
+      rmSync(xdg, { recursive: true, force: true });
+    }
+  });
+
+  it('loop --preset with unknown preset shows error', () => {
+    const xdg = mkdtempSync(join(tmpdir(), 'counselors-test-'));
+    try {
+      const configDir = join(xdg, 'counselors');
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(
+        join(configDir, 'config.json'),
+        `${JSON.stringify(
+          {
+            version: 1,
+            defaults: {
+              timeout: 540,
+              outputDir: './agents/counselors',
+              readOnly: 'bestEffort',
+              maxContextKb: 50,
+              maxParallel: 4,
+            },
+            tools: {
+              claude: {
+                binary: '/usr/bin/claude',
+                adapter: 'claude',
+                readOnly: { level: 'enforced' },
+              },
+            },
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      const output = run('loop --preset nonexistent -t claude', {
+        env: { XDG_CONFIG_HOME: xdg },
+      });
+
+      expect(output).toContain('Unknown preset "nonexistent"');
+    } finally {
+      rmSync(xdg, { recursive: true, force: true });
+    }
+  });
+
+  it('loop --dry-run supports --group expansion', () => {
+    const xdg = mkdtempSync(join(tmpdir(), 'counselors-test-'));
+    try {
+      const configDir = join(xdg, 'counselors');
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(
+        join(configDir, 'config.json'),
+        `${JSON.stringify(
+          {
+            version: 1,
+            defaults: {
+              timeout: 540,
+              outputDir: './agents/counselors',
+              readOnly: 'bestEffort',
+              maxContextKb: 50,
+              maxParallel: 4,
+            },
+            tools: {
+              claude: {
+                binary: '/usr/bin/claude',
+                adapter: 'claude',
+                readOnly: { level: 'enforced' },
+              },
+              codex: {
+                binary: '/usr/bin/codex',
+                adapter: 'codex',
+                readOnly: { level: 'enforced' },
+              },
+            },
+            groups: { smart: ['claude', 'codex'] },
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      const output = run('loop --dry-run --group smart "test"', {
+        env: { XDG_CONFIG_HOME: xdg },
+      });
+
+      expect(output).toContain('claude');
+      expect(output).toContain('codex');
+      expect(output).toContain('Rounds:');
     } finally {
       rmSync(xdg, { recursive: true, force: true });
     }

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `loop` command for multi-round dispatch — agents iterate across rounds, seeing prior outputs each round (`--rounds`, `--duration`, `--preset`, `--scope`)
+- Presets system for domain-specific multi-round workflows (`--preset test` for automated test gap hunting)
+- Non-TTY heartbeat: emits elapsed time and active PIDs to stderr every 60 seconds, preventing outer-agent timeouts during long-running dispatches
+
+### Changed
+- Extracted shared `run`/`loop` utilities into `_run-shared.ts` for reuse across both commands
+
 ### Fixed
 - `run -f` no longer creates duplicate output directories when the prompt file already lives inside the output base directory
 - Gemini adapter appends a prompt instruction to suppress tool-use narration ("I will read...", "I will list...") that was polluting headless output

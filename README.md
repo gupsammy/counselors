@@ -118,6 +118,31 @@ counselors run -t opus,opus,opus "Review this"  # Run the same tool multiple tim
 | `--json` | Output manifest as JSON |
 | `-o, --output-dir <dir>` | Base output directory |
 
+### `loop [prompt]`
+
+Multi-round dispatch — agents iterate, seeing prior outputs each round.
+
+Each round dispatches to all tools in parallel. Starting from round 2, each agent receives the outputs from all prior rounds, so it can build on previous analysis and avoid repeating findings.
+
+```bash
+counselors loop "Find and fix test gaps in src/auth/" --rounds 5
+counselors loop --duration 30m "Hunt for edge cases"
+counselors loop --preset test --scope src/api/
+```
+
+| Flag | Description |
+|------|-------------|
+| `--rounds <N>` | Number of dispatch rounds (default: 3) |
+| `--duration <time>` | Max total duration (e.g. `"30m"`, `"1h"`). If set without `--rounds`, runs unlimited rounds until time expires |
+| `--preset <name>` | Use a built-in preset (e.g. `"test"`) |
+| `--scope <path>` | Constrain preset discovery to a directory |
+
+Plus all `run` flags: `-f`, `-t`, `-g`, `--context`, `--read-only`, `--dry-run`, `--json`, `-o`.
+
+**SIGINT handling:** First Ctrl+C finishes the current round gracefully. Second Ctrl+C force-exits immediately.
+
+**Presets** provide domain-specific multi-round workflows. The `test` preset discovers test files, runs agents to find bugs, and iterates to find new issues each round.
+
 ### `init`
 
 Interactive setup wizard. Discovers installed AI CLIs, lets you pick tools and models, runs validation tests.
@@ -161,6 +186,14 @@ Delete run output directories older than a given age. Defaults to older than 1 d
 counselors cleanup
 counselors cleanup --dry-run --older-than 7d
 counselors cleanup --older-than 36h --yes
+```
+
+### `config`
+
+Print the config file path and the full resolved configuration as JSON.
+
+```bash
+counselors config
 ```
 
 ### `tools`
@@ -274,6 +307,24 @@ Each run creates a directory under your configured output directory (`defaults.o
 
 If the `{slug}` directory already exists, counselors appends a timestamp suffix to avoid collisions.
 
+For multi-round runs (`loop`), each round gets its own subdirectory:
+
+```
+<outputDir>/{slug}/
+  round-1/
+    prompt.md
+    {tool-id}.md
+    {tool-id}.stderr
+    synthesis.md
+  round-2/
+    prompt.md              # augmented with prior round outputs
+    {tool-id}.md
+    synthesis.md
+  ...
+  final-synthesis.md       # combined synthesis across all rounds
+  run.json                 # manifest with rounds array
+```
+
 ## Skill / slash command
 
 Install `/counselors` as a skill in Claude Code or other agents:
@@ -373,6 +424,12 @@ Codex also found 2 bugs all agents acknowledged: dedup by name drops valid sugge
 | `patchInputHandler` | All agree: must add `isComposing` guard — CJK/IME will break without it |
 | Phase ordering | All agree: keep phases 4 and 5 separate, add a Phase 0 for compat checker |
 | `renderer.metrics` hack | All agree: high to extremely high risk of breakage in 0.4.0 |
+
+**Topic: Multi-round test gap hunting** — _`loop --preset test`_
+
+> counselors loop --preset test --scope src/auth/ --rounds 3
+
+Round 1 discovers the test landscape and finds initial gaps. Round 2 reads the round-1 reports and hunts for edge cases the first round missed. Round 3 goes deeper on anything still uncovered. Each agent independently builds on prior findings without repeating them.
 
 ## Security
 

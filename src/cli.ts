@@ -7,6 +7,7 @@ import { registerGroupAddCommand } from './commands/groups/add.js';
 import { registerGroupListCommand } from './commands/groups/list.js';
 import { registerGroupRemoveCommand } from './commands/groups/remove.js';
 import { registerInitCommand } from './commands/init.js';
+import { registerLoopCommand } from './commands/loop.js';
 import { registerRunCommand } from './commands/run.js';
 import { registerSkillCommand } from './commands/skill.js';
 import { registerAddCommand } from './commands/tools/add.js';
@@ -27,6 +28,7 @@ program
 
 // Top-level commands
 registerRunCommand(program);
+registerLoopCommand(program);
 registerCleanupCommand(program);
 registerConfigCommand(program);
 registerDoctorCommand(program);

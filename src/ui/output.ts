@@ -121,6 +121,10 @@ export function formatTestResults(results: TestResult[]): string {
 }
 
 export function formatRunSummary(manifest: RunManifest): string {
+  if (manifest.rounds && manifest.rounds.length > 0) {
+    return formatMultiRoundSummary(manifest);
+  }
+
   const lines: string[] = ['', `Run complete: ${manifest.slug}`, ''];
 
   for (const r of manifest.tools) {
@@ -139,6 +143,35 @@ export function formatRunSummary(manifest: RunManifest): string {
   lines.push('');
   lines.push(
     `Reports saved to: ${manifest.tools[0]?.outputFile ? manifest.tools[0].outputFile.replace(/\/[^/]+$/, '/') : 'output dir'}`,
+  );
+  lines.push('');
+  return lines.join('\n');
+}
+
+function formatMultiRoundSummary(manifest: RunManifest): string {
+  const lines: string[] = [
+    '',
+    `Run complete: ${manifest.slug}`,
+    `  ${manifest.totalRounds} round(s)${manifest.durationMs ? ` in ${(manifest.durationMs / 1000).toFixed(1)}s` : ''}${manifest.preset ? ` (preset: ${manifest.preset})` : ''}`,
+    '',
+  ];
+
+  for (const round of manifest.rounds!) {
+    lines.push(`  Round ${round.round}:`);
+    for (const r of round.tools) {
+      const icon =
+        r.status === 'success' ? '✓' : r.status === 'timeout' ? '⏱' : '✗';
+      const duration = (r.durationMs / 1000).toFixed(1);
+      lines.push(
+        `    ${icon} ${r.toolId} — ${r.wordCount} words, ${duration}s`,
+      );
+    }
+  }
+
+  lines.push('');
+  // Strip filename and round-N dir to show the parent run directory
+  lines.push(
+    `Reports saved to: ${manifest.tools[0]?.outputFile ? manifest.tools[0].outputFile.replace(/\/[^/]+\/[^/]+$/, '/') : 'output dir'}`,
   );
   lines.push('');
   return lines.join('\n');

@@ -143,6 +143,14 @@ export interface TestResult {
   command?: string;
 }
 
+// ── Round manifest (multi-round mode) ──
+
+export interface RoundManifest {
+  round: number;
+  timestamp: string;
+  tools: ToolReport[];
+}
+
 // ── Run manifest ──
 
 export interface RunManifest {
@@ -152,4 +160,8 @@ export interface RunManifest {
   promptSource: 'inline' | 'file' | 'stdin';
   readOnlyPolicy: ReadOnlyLevel;
   tools: ToolReport[];
+  rounds?: RoundManifest[];
+  totalRounds?: number;
+  durationMs?: number;
+  preset?: string;
 }

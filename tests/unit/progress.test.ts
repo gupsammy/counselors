@@ -46,6 +46,115 @@ function makeReport(overrides: Partial<ToolReport> = {}): ToolReport {
   };
 }
 
+describe('ProgressDisplay heartbeat (non-TTY)', () => {
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
+  it('emits first heartbeat at 60s with elapsed time', async () => {
+    vi.useFakeTimers();
+    const ProgressDisplay = await loadProgressDisplay();
+    const display = new ProgressDisplay(['claude'], '/tmp/output');
+    display.start('claude');
+    stderrOutput = '';
+
+    // No heartbeat before 60s
+    vi.advanceTimersByTime(59_999);
+    expect(stderrOutput).not.toContain('heartbeat');
+
+    // Heartbeat at 60s
+    vi.advanceTimersByTime(1);
+    expect(stderrOutput).toContain('heartbeat: 1m 0s elapsed');
+
+    display.stop();
+  });
+
+  it('formats multi-minute elapsed time', async () => {
+    vi.useFakeTimers();
+    const ProgressDisplay = await loadProgressDisplay();
+    const display = new ProgressDisplay(['claude'], '/tmp/output');
+    display.start('claude');
+    stderrOutput = '';
+
+    vi.advanceTimersByTime(120_000);
+    expect(stderrOutput).toContain('heartbeat: 2m 0s elapsed');
+
+    display.stop();
+  });
+
+  it('includes active PIDs in heartbeat', async () => {
+    vi.useFakeTimers();
+    const ProgressDisplay = await loadProgressDisplay();
+    const display = new ProgressDisplay(['claude', 'codex'], '/tmp/output');
+    display.start('claude', 111);
+    display.start('codex', 222);
+    stderrOutput = '';
+
+    vi.advanceTimersByTime(60_000);
+    expect(stderrOutput).toContain('(PIDs: 111, 222)');
+
+    display.stop();
+  });
+
+  it('omits PID list when no tools have PIDs', async () => {
+    vi.useFakeTimers();
+    const ProgressDisplay = await loadProgressDisplay();
+    const display = new ProgressDisplay(['claude'], '/tmp/output');
+    display.start('claude');
+    stderrOutput = '';
+
+    vi.advanceTimersByTime(60_000);
+    expect(stderrOutput).toContain('heartbeat:');
+    expect(stderrOutput).not.toContain('PIDs');
+
+    display.stop();
+  });
+
+  it('excludes completed tools from PID list', async () => {
+    vi.useFakeTimers();
+    const ProgressDisplay = await loadProgressDisplay();
+    const display = new ProgressDisplay(['claude', 'codex'], '/tmp/output');
+    display.start('claude', 111);
+    display.start('codex', 222);
+    display.complete('claude', makeReport({ toolId: 'claude' }));
+    stderrOutput = '';
+
+    vi.advanceTimersByTime(60_000);
+    expect(stderrOutput).toContain('(PIDs: 222)');
+    expect(stderrOutput).not.toContain('111');
+
+    display.stop();
+  });
+
+  it('does not start multiple heartbeats for multiple start() calls', async () => {
+    vi.useFakeTimers();
+    const ProgressDisplay = await loadProgressDisplay();
+    const display = new ProgressDisplay(['claude', 'codex'], '/tmp/output');
+    display.start('claude');
+    display.start('codex');
+    stderrOutput = '';
+
+    vi.advanceTimersByTime(60_000);
+    const heartbeats = stderrOutput.match(/heartbeat:/g);
+    expect(heartbeats).toHaveLength(1);
+
+    display.stop();
+  });
+
+  it('stop() clears heartbeat so no further output appears', async () => {
+    vi.useFakeTimers();
+    const ProgressDisplay = await loadProgressDisplay();
+    const display = new ProgressDisplay(['claude'], '/tmp/output');
+    display.start('claude');
+    display.stop();
+    stderrOutput = '';
+
+    vi.advanceTimersByTime(120_000);
+    expect(stderrOutput).not.toContain('heartbeat');
+  });
+});
+
 describe('ProgressDisplay (non-TTY)', () => {
   it('prints output dir on construction', async () => {
     const ProgressDisplay = await loadProgressDisplay();
