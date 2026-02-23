@@ -32,7 +32,9 @@ const SKILL_TEMPLATE_HISTORY_URL =
 
 function printSkillUpdateGuidance(): void {
   info('');
-  info('The skill template might have changed. Copy and paste this into your LLM:');
+  info(
+    'The skill template might have changed. Copy and paste this into your LLM:',
+  );
   info('');
   info('The counselors CLI has an updated skill template.');
   info('');
@@ -41,7 +43,9 @@ function printSkillUpdateGuidance(): void {
     '2. Open my existing counselors skill file and compare VERY CAREFULLY for anything that changed.',
   );
   info('3. Apply the updates manually; do not blindly overwrite.');
-  info('4. If you need more context, check the git history for the skill template here:');
+  info(
+    '4. If you need more context, check the git history for the skill template here:',
+  );
   info(`   ${SKILL_TEMPLATE_HISTORY_URL}`);
 }
 

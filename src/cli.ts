@@ -24,7 +24,9 @@ const program = new Command();
 
 program
   .name('counselors')
-  .description('Fan out prompts to multiple AI coding tools (agents) in parallel')
+  .description(
+    'Fan out prompts to multiple AI coding tools (agents) in parallel',
+  )
   .version(VERSION);
 
 // Top-level commands
