@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Child process PIDs are now surfaced during discovery and prompt-writing phases, giving outer agents visibility to monitor long-running prep steps
+
 ## [0.5.0] - 2026-02-26
 
 ### Added
