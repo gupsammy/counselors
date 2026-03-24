@@ -98,9 +98,9 @@ describe('CodexAdapter', () => {
       'codex-5.3-xhigh',
       'codex-5.3-medium',
     ]);
-    expect(
-      adapter.models.slice(0, 3).every((m) => m.id === 'gpt-5.4'),
-    ).toBe(true);
+    expect(adapter.models.slice(0, 3).every((m) => m.id === 'gpt-5.4')).toBe(
+      true,
+    );
     expect(adapter.models.slice(3).every((m) => m.id === 'gpt-5.3-codex')).toBe(
       true,
     );
