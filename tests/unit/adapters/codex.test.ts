@@ -13,7 +13,7 @@ describe('CodexAdapter', () => {
     readOnlyPolicy: 'enforced',
     timeout: 540,
     cwd: '/tmp',
-    extraFlags: ['-m', 'gpt-5.4-codex', '-c', 'model_reasoning_effort=high'],
+    extraFlags: ['-m', 'gpt-5.4', '-c', 'model_reasoning_effort=high'],
   };
 
   it('has correct metadata', () => {
@@ -28,7 +28,7 @@ describe('CodexAdapter', () => {
     expect(inv.cmd).toBe('codex');
     expect(inv.args).toContain('exec');
     expect(inv.args).toContain('-m');
-    expect(inv.args).toContain('gpt-5.4-codex');
+    expect(inv.args).toContain('gpt-5.4');
     expect(inv.args).toContain('--sandbox');
     expect(inv.args).toContain('read-only');
     expect(inv.args).toContain('-c');
@@ -99,7 +99,7 @@ describe('CodexAdapter', () => {
       'codex-5.3-medium',
     ]);
     expect(
-      adapter.models.slice(0, 3).every((m) => m.id === 'gpt-5.4-codex'),
+      adapter.models.slice(0, 3).every((m) => m.id === 'gpt-5.4'),
     ).toBe(true);
     expect(adapter.models.slice(3).every((m) => m.id === 'gpt-5.3-codex')).toBe(
       true,
