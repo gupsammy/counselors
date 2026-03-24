@@ -25,9 +25,9 @@ export class GeminiAdapter extends BaseAdapter {
       extraFlags: ['-m', 'gemini-2.5-pro'],
     },
     {
-      id: 'gemini-3.1-flash',
-      name: 'Gemini 3.1 Flash — fast',
-      extraFlags: ['-m', 'gemini-3.1-flash-preview'],
+      id: 'gemini-3.0-flash',
+      name: 'Gemini 3.0 Flash — fast',
+      extraFlags: ['-m', 'gemini-3.0-flash-preview'],
     },
     {
       id: 'gemini-3-flash',
