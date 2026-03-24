@@ -9,9 +9,14 @@ export class GeminiAdapter extends BaseAdapter {
   readOnly = { level: 'enforced' as const };
   models = [
     {
-      id: 'gemini-3-pro',
-      name: 'Gemini 3 Pro — latest',
+      id: 'gemini-3.1-pro',
+      name: 'Gemini 3.1 Pro — latest',
       recommended: true,
+      extraFlags: ['-m', 'gemini-3.1-pro-preview'],
+    },
+    {
+      id: 'gemini-3-pro',
+      name: 'Gemini 3 Pro',
       extraFlags: ['-m', 'gemini-3-pro-preview'],
     },
     {
@@ -20,8 +25,13 @@ export class GeminiAdapter extends BaseAdapter {
       extraFlags: ['-m', 'gemini-2.5-pro'],
     },
     {
+      id: 'gemini-3.1-flash',
+      name: 'Gemini 3.1 Flash — fast',
+      extraFlags: ['-m', 'gemini-3.1-flash-preview'],
+    },
+    {
       id: 'gemini-3-flash',
-      name: 'Gemini 3 Flash — fast',
+      name: 'Gemini 3 Flash',
       extraFlags: ['-m', 'gemini-3-flash-preview'],
     },
     {

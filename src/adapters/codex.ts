@@ -10,10 +10,33 @@ export class CodexAdapter extends BaseAdapter {
   readOnly = { level: 'enforced' as const };
   models = [
     {
+      id: 'gpt-5.4-codex',
+      compoundId: 'codex-5.4-high',
+      name: 'GPT-5.4 Codex — high reasoning',
+      recommended: true,
+      extraFlags: ['-m', 'gpt-5.4-codex', '-c', 'model_reasoning_effort=high'],
+    },
+    {
+      id: 'gpt-5.4-codex',
+      compoundId: 'codex-5.4-xhigh',
+      name: 'GPT-5.4 Codex — xhigh reasoning',
+      extraFlags: ['-m', 'gpt-5.4-codex', '-c', 'model_reasoning_effort=xhigh'],
+    },
+    {
+      id: 'gpt-5.4-codex',
+      compoundId: 'codex-5.4-medium',
+      name: 'GPT-5.4 Codex — medium reasoning',
+      extraFlags: [
+        '-m',
+        'gpt-5.4-codex',
+        '-c',
+        'model_reasoning_effort=medium',
+      ],
+    },
+    {
       id: 'gpt-5.3-codex',
       compoundId: 'codex-5.3-high',
       name: 'GPT-5.3 Codex — high reasoning',
-      recommended: true,
       extraFlags: ['-m', 'gpt-5.3-codex', '-c', 'model_reasoning_effort=high'],
     },
     {

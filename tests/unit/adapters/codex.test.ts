@@ -13,7 +13,7 @@ describe('CodexAdapter', () => {
     readOnlyPolicy: 'enforced',
     timeout: 540,
     cwd: '/tmp',
-    extraFlags: ['-m', 'gpt-5.3-codex', '-c', 'model_reasoning_effort=high'],
+    extraFlags: ['-m', 'gpt-5.4-codex', '-c', 'model_reasoning_effort=high'],
   };
 
   it('has correct metadata', () => {
@@ -28,7 +28,7 @@ describe('CodexAdapter', () => {
     expect(inv.cmd).toBe('codex');
     expect(inv.args).toContain('exec');
     expect(inv.args).toContain('-m');
-    expect(inv.args).toContain('gpt-5.3-codex');
+    expect(inv.args).toContain('gpt-5.4-codex');
     expect(inv.args).toContain('--sandbox');
     expect(inv.args).toContain('read-only');
     expect(inv.args).toContain('-c');
@@ -88,20 +88,25 @@ describe('CodexAdapter', () => {
     expect(effortIdx).toBeLessThan(instructionIdx);
   });
 
-  it('has three gpt-5.3-codex models with different reasoning efforts', () => {
-    expect(adapter.models).toHaveLength(3);
+  it('has six codex models: three 5.4 and three 5.3', () => {
+    expect(adapter.models).toHaveLength(6);
     expect(adapter.models.map((m) => m.compoundId)).toEqual([
+      'codex-5.4-high',
+      'codex-5.4-xhigh',
+      'codex-5.4-medium',
       'codex-5.3-high',
       'codex-5.3-xhigh',
       'codex-5.3-medium',
     ]);
-    expect(adapter.models.every((m) => m.id === 'gpt-5.3-codex')).toBe(true);
+    expect(adapter.models.slice(0, 3).every((m) => m.id === 'gpt-5.4-codex')).toBe(true);
+    expect(adapter.models.slice(3).every((m) => m.id === 'gpt-5.3-codex')).toBe(true);
   });
 
   it('only marks the first model as recommended', () => {
     expect(adapter.models[0].recommended).toBe(true);
-    expect(adapter.models[1].recommended).toBeFalsy();
-    expect(adapter.models[2].recommended).toBeFalsy();
+    for (let i = 1; i < adapter.models.length; i++) {
+      expect(adapter.models[i].recommended).toBeFalsy();
+    }
   });
 
   it('each model has correct extraFlags for its reasoning effort', () => {
@@ -112,6 +117,15 @@ describe('CodexAdapter', () => {
       'model_reasoning_effort=xhigh',
     );
     expect(adapter.models[2].extraFlags).toContain(
+      'model_reasoning_effort=medium',
+    );
+    expect(adapter.models[3].extraFlags).toContain(
+      'model_reasoning_effort=high',
+    );
+    expect(adapter.models[4].extraFlags).toContain(
+      'model_reasoning_effort=xhigh',
+    );
+    expect(adapter.models[5].extraFlags).toContain(
       'model_reasoning_effort=medium',
     );
   });
